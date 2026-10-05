@@ -8,6 +8,11 @@ final class Class298 {
     static int anInt3810;
     static boolean aBoolean3811 = false;
 
+    /** True while the displayfps overlay is shown, read back so the experimental renderer can persist it. */
+    static boolean isFpsOverlayShown() {
+        return aBoolean3811;
+    }
+
     static final int method2250(int i, int i_0_, int i_1_, int i_2_) {
         if (i_0_ < 36) aBoolean3811 = true;
         anInt3810++;

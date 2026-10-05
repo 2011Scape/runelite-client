@@ -85,6 +85,24 @@ public class MouseManager
 		mouseWheelListeners.remove(mouseWheelListener);
 	}
 
+	/**
+	 * Feeds a listener's result back into the chain, tolerating a null return.
+	 * <p>
+	 * Listeners are commonly written as {@code MouseAdapter} subclasses whose
+	 * overridden methods bail out with a bare {@code return null}, and one of them
+	 * genuinely does ({@code OverlayRenderer.mouseDragged}). Treating that as
+	 * "no change" keeps the event usable, instead of handing null to the next
+	 * listener or back to the client.
+	 *
+	 * @param current the event as it stands
+	 * @param result  what the listener returned, possibly null
+	 * @return the event to continue with
+	 */
+	private static <T extends MouseEvent> T next(T current, T result)
+	{
+		return result == null ? current : result;
+	}
+
 	public MouseEvent processMousePressed(MouseEvent mouseEvent)
 	{
 		if (mouseEvent.isConsumed())
@@ -95,7 +113,7 @@ public class MouseManager
 		checkExtraMouseButtons(mouseEvent);
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mousePressed(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mousePressed(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -114,7 +132,7 @@ public class MouseManager
 		checkExtraMouseButtons(mouseEvent);
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mouseReleased(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mouseReleased(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -133,7 +151,7 @@ public class MouseManager
 		checkExtraMouseButtons(mouseEvent);
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mouseClicked(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mouseClicked(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -162,7 +180,7 @@ public class MouseManager
 
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mouseEntered(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mouseEntered(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -180,7 +198,7 @@ public class MouseManager
 
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mouseExited(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mouseExited(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -198,7 +216,7 @@ public class MouseManager
 
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mouseDragged(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mouseDragged(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -216,7 +234,7 @@ public class MouseManager
 
 		for (MouseListener mouseListener : mouseListeners)
 		{
-			mouseEvent = mouseListener.mouseMoved(mouseEvent);
+			mouseEvent = next(mouseEvent, mouseListener.mouseMoved(mouseEvent));
 			if (mouseEvent.isConsumed())
 			{
 				break;
@@ -234,7 +252,7 @@ public class MouseManager
 
 		for (MouseWheelListener mouseWheelListener : mouseWheelListeners)
 		{
-			mouseWheelEvent = mouseWheelListener.mouseWheelMoved(mouseWheelEvent);
+			mouseWheelEvent = next(mouseWheelEvent, mouseWheelListener.mouseWheelMoved(mouseWheelEvent));
 			if (mouseWheelEvent.isConsumed())
 			{
 				break;

@@ -54,6 +54,11 @@ final class Class258_Sub1 extends Class258 {
     static final void method1960(int i, int i_12_, int i_13_, int i_14_, byte[][][] is, int[] is_15_, int[] is_16_, int[] is_17_, int[] is_18_, int[] is_19_, int i_20_, byte i_21_, int i_22_, int i_23_, boolean bool, boolean bool_24_, int i_25_, int i_26_, boolean bool_27_) {
         Class23.aBoolean351 = true;
         Class318_Sub1_Sub3_Sub3.aBoolean10221 = Class9.aHa171.method3704() > 0;
+        // NOTE: forcing the reduced-culling path here (aBoolean9242 = false) makes Class348_Sub9.method2778
+        // draw every scene entity, which at long render distances queues far more than the vanilla
+        // counts. The depth-sort queues now grow to hold them (Class348_Sub49_Sub1.queueGroundEntity/
+        // queueTallEntity), so it no longer overflows, but it is still left to the client so object
+        // culling stays bounded; the tile grid and occlusion below handle the terrain side.
         Class348_Sub40_Sub17.aBoolean9242 = bool_24_;
         Class239_Sub25.anInt6111 = i_12_ >> Class362.anInt4459;
         Class285_Sub2.anInt8502 = i_14_ >> Class362.anInt4459;
@@ -91,6 +96,10 @@ final class Class258_Sub1 extends Class258 {
                         int i_37_ = (Class348_Sub1_Sub1.aSArray8801[Class348_Sub1_Sub1.aSArray8801.length - 1].method3982((byte) -86, i_34_, i_33_) - (1000 << Class362.anInt4459 - 7));
                         int i_38_ = (Class332.aSArray4142 != null ? (Class332.aSArray4142[0].method3982((byte) -86, i_34_, i_33_) + Class270.anInt3465) : (Class348_Sub1_Sub1.aSArray8801[0].method3982((byte) -86, i_34_, i_33_) + Class270.anInt3465));
                         i_31_ = (i_25_ >= 0 ? Class9.aHa171.r(i_35_, i_37_, i_36_, i_35_, i_38_, i_36_, i_25_) : Class9.aHa171.JA(i_35_, i_37_, i_36_, i_35_, i_38_, i_36_));
+                        // The experimental renderer's culling tab can stop the camera-view cull: treating
+                        // every in-radius tile as unclipped (0) marks it visible, so the frustum no longer
+                        // hides the tiles it does not reach.
+                        if (GameTuning.viewCullingDisabled()) i_31_ = 0;
                         Class348_Sub8.aBooleanArrayArray6656[i_29_][i_32_] = i_31_ == 0;
                     } else {
                         i_31_ = -1;
@@ -129,8 +138,6 @@ final class Class258_Sub1 extends Class258 {
             Class59_Sub1.anInt5293 = Class348_Sub41.anInt7054;
             Class23.aBoolean351 = false;
         }
-        method1961(Class99.aBooleanArrayArray1572, Class318_Sub1_Sub4_Sub1.anInt10084, 0);
-        method1961(Class348_Sub8.aBooleanArrayArray6656, Class318_Sub1_Sub4_Sub1.anInt10084, 1);
         Class243.method1877(Class9.aHa171, -69);
         if (!Class71.aClass76_1208.aBoolean1283) {
             Class243 class243 = Class71.aClass76_1208.aClass243_1282;
@@ -184,25 +191,6 @@ final class Class258_Sub1 extends Class258 {
             Class348_Sub8.aBooleanArrayArray6656 = bools_28_;
         }
         Class245.method1884();
-    }
-
-    private static void method1961(boolean[][] bools, int radius, int centerOffset) {
-        int margin = Loader.FOG_EDGE_RADIAL_TILE_MARGIN;
-        if (bools == null || radius <= 1 || margin <= 0) return;
-        int effectiveRadius = radius - margin;
-        if (effectiveRadius <= 0) return;
-        int radiusSq = effectiveRadius * effectiveRadius;
-        int center = radius + centerOffset;
-        for (int x = 0; x < bools.length; x++) {
-            boolean[] row = bools[x];
-            if (row == null) continue;
-            int dx = x - center;
-            for (int y = 0; y < row.length; y++) {
-                if (!row[y]) continue;
-                int dy = y - center;
-                if (dx * dx + dy * dy > radiusSq) row[y] = false;
-            }
-        }
     }
 
     Class258_Sub1(ha_Sub2 var_ha_Sub2, int i, int i_49_, int i_50_, int i_51_) {

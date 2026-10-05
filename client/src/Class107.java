@@ -84,7 +84,26 @@ final class Class107 {
             if (var_aa != null) {
                 if (i_2_ != 22960) anIntArray1650 = null;
                 var_ha.KA(i, i_1_, i + class46.anInt709, class46.anInt789 + i_1_);
-                if (Class259.anInt3306 != 2 && Class259.anInt3306 != 5 && Class108.aClass105_1664 != null) {
+                // Nearly every browser build of this interface blacked the minimap out by
+                // painting the widget's own silhouette, and this client inherited it. It is
+                // only ever the right thing to do when the server asks for it (map state 2
+                // and 5, see the packet 104 handler); a scene that has changed - a region
+                // load, a plane change, ::rebuild - leaves no image behind, and blacking the
+                // map out for those frames is what made the minimap look broken. So: the
+                // server's blank map stays, everything else falls back to the last good
+                // image, and when there has never been one the widget keeps whatever the
+                // interface drew under it. The markers are no longer inside the "is there an
+                // image" branch either, because the player's own dot and destination flag
+                // are the last things that should vanish with the terrain.
+                boolean blackout = (Class259.anInt3306 == 2 || Class259.anInt3306 == 5) && !Loader.IGNORE_MINIMAP_BLACKOUT;
+                Class105 mapImage = Class108.minimapImage();
+                int mapReason;
+                if (blackout) mapReason = MinimapDebug.BLACKOUT_STATE;
+                else if (Class108.aClass105_1664 != null) mapReason = MinimapDebug.NONE;
+                else if (mapImage != null) mapReason = MinimapDebug.STALE_IMAGE;
+                else mapReason = MinimapDebug.NO_IMAGE;
+                MinimapDebug.record(mapReason);
+                if (!blackout) {
                     int i_3_;
                     int i_4_;
                     int i_5_;
@@ -102,7 +121,7 @@ final class Class107 {
                     }
                     int i_7_ = 48 - (-(i_4_ / 128) - -(Class367_Sub4.anInt7319 * 2)) - -208;
                     int i_8_ = (208 - (Class348_Sub40_Sub3.anInt9109 * 2 - 48) + 4 * Class348_Sub40_Sub3.anInt9109 - i_3_ / 128);
-                    Class108.aClass105_1664.method967(((float) class46.anInt709 / 2.0F + (float) i), ((float) class46.anInt789 / 2.0F + (float) i_1_), (float) i_7_, (float) i_8_, i_5_, i_6_ << 2, var_aa, i, i_1_);
+                    if (mapImage != null) mapImage.method967(((float) class46.anInt709 / 2.0F + (float) i), ((float) class46.anInt789 / 2.0F + (float) i_1_), (float) i_7_, (float) i_8_, i_5_, i_6_ << 2, var_aa, i, i_1_);
                     for (IntNode IntNode = (IntNode) Class318_Sub1_Sub5_Sub1.aClass262_10125.method1995(i_2_ ^ 0x59b4); IntNode != null; IntNode = (IntNode) Class318_Sub1_Sub5_Sub1.aClass262_10125.method1990((byte) 92)) {
                         int i_9_ = IntNode.anInt6976;
                         int i_10_ = (-za_Sub2.regionTileX + ((0xfffe5b0 & (r_Sub2.aClass252_10488.anIntArray3238[i_9_])) >> 14));
@@ -218,7 +237,7 @@ final class Class107 {
                         if (!Class132.aPlayer_1907.aBoolean10551) var_ha.method3675(3, (byte) -125, -1 + (i - -((class46.anInt709) / 2)), -1 + ((class46.anInt789) / 2 + i_1_), 3, -1);
                     }
                 } else var_ha.A(-16777216, var_aa, i, i_1_);
-            }
+            } else MinimapDebug.record(MinimapDebug.NO_WIDGET_TEXTURE);
         } catch (RuntimeException runtimeexception) {
             throw Class348_Sub17.method2929(runtimeexception, ("mn.F(" + (class46 != null ? "{...}" : "null") + ',' + (var_ha != null ? "{...}" : "null") + ',' + i + ',' + i_1_ + ',' + i_2_ + ')'));
         }

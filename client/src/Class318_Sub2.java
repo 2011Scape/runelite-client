@@ -96,6 +96,24 @@ final class Class318_Sub2 extends Linkable {
         }
     }
 
+    /** How many slots the projected-entity queue grows by when the expanded scene fills it. */
+    private static final int PROJECTED_QUEUE_GROWTH = 1024;
+
+    /**
+     * Appends to the water/overlay projected-entity queue ({@code Class348_Sub42_Sub19.aClass338Array9700}).
+     * That queue was a fixed 500 chosen for the vanilla 104x104 scene; the experimental renderer's
+     * larger built regions put more projected entities through than it held, which overflowed the array
+     * and crashed the frame with {@code ArrayIndexOutOfBoundsException: 500}. The queue is only ever read
+     * and cleared with the live {@code Class348_Sub42_Sub10.anInt9577} count, so growing it is safe.
+     */
+    private static void queueProjectedEntity(Class338 class338) {
+        Class338[] queue = Class348_Sub42_Sub19.aClass338Array9700;
+        int index = Class348_Sub42_Sub10.anInt9577;
+        if (index >= queue.length) Class348_Sub42_Sub19.aClass338Array9700 = queue = java.util.Arrays.copyOf(queue, queue.length + PROJECTED_QUEUE_GROWTH);
+        queue[index] = class338;
+        Class348_Sub42_Sub10.anInt9577 = index + 1;
+    }
+
     static final void method2498(Class338 class338, ha var_ha, byte i, int i_18_) {
         try {
             anInt6395++;
@@ -126,7 +144,7 @@ final class Class318_Sub2 extends Linkable {
                         float f = (float) (Class141.anInt1974 - (class338.anIntArray4187[0]));
                         if (f < 0.0F) f *= -1.0F;
                         if (!(f < (float) Class11.anInt194) && Class354.method3465(0, 1, class338) && Class354.method3465(1, 1, class338) && Class354.method3465(2, 1, class338) && Class354.method3465(3, 1, class338))
-                            Class348_Sub42_Sub19.aClass338Array9700[Class348_Sub42_Sub10.anInt9577++] = class338;
+                            queueProjectedEntity(class338);
                     }
                 }
             } else if (class338.aByte4192 == 2) {
@@ -151,7 +169,7 @@ final class Class318_Sub2 extends Linkable {
                         float f = (float) (Class348_Sub40_Sub27.anInt9360 - (class338.anIntArray4184[0]));
                         if (f < 0.0F) f *= -1.0F;
                         if (!(f < (float) Class11.anInt194) && Class354.method3465(0, 1, class338) && Class354.method3465(1, 1, class338) && Class354.method3465(2, 1, class338) && Class354.method3465(3, 1, class338))
-                            Class348_Sub42_Sub19.aClass338Array9700[Class348_Sub42_Sub10.anInt9577++] = class338;
+                            queueProjectedEntity(class338);
                     }
                 }
             } else if (class338.aByte4192 == 16 || class338.aByte4192 == 8) {
@@ -164,7 +182,7 @@ final class Class318_Sub2 extends Linkable {
                         float f_28_ = (float) (Class348_Sub40_Sub27.anInt9360 + -(class338.anIntArray4184[0]));
                         if (f_28_ < 0.0F) f_28_ *= -1.0F;
                         if ((!(f < (float) Class11.anInt194) || !((float) Class11.anInt194 > f_28_)) && Class354.method3465(0, 1, class338) && Class354.method3465(1, 1, class338) && Class354.method3465(2, 1, class338) && Class354.method3465(3, 1, class338))
-                            Class348_Sub42_Sub19.aClass338Array9700[Class348_Sub42_Sub10.anInt9577++] = class338;
+                            queueProjectedEntity(class338);
                     }
                 }
             } else if (class338.aByte4192 == 4) {
@@ -194,7 +212,7 @@ final class Class318_Sub2 extends Linkable {
                             }
                         }
                     }
-                    if (bool && Class354.method3465(0, 1, class338) && Class354.method3465(1, 1, class338) && Class354.method3465(2, 1, class338) && Class354.method3465(3, 1, class338)) Class348_Sub42_Sub19.aClass338Array9700[Class348_Sub42_Sub10.anInt9577++] = class338;
+                    if (bool && Class354.method3465(0, 1, class338) && Class354.method3465(1, 1, class338) && Class354.method3465(2, 1, class338) && Class354.method3465(3, 1, class338)) queueProjectedEntity(class338);
                 }
             }
         } catch (RuntimeException runtimeexception) {

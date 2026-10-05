@@ -1776,11 +1776,18 @@ public final class client extends Applet_Sub1 {
                     }
                 } else r_Sub1.aClass262_10479.method1999(class348_sub45, -20180);
             }
+            GameTuning.update();
             if (Class348_Sub42_Sub16_Sub2.method3263(true)) Class38.method363(125);
             if (Class139.method1167(Class240.anInt4674, (byte) -51)) {
                 Class52.method493(true);
                 Class94.method867(true);
-            } else if (Class318_Sub1_Sub1_Sub2.method2402(Class240.anInt4674, (byte) -120)) Canvas_Sub1.method123(0);
+            } else if (
+                // The dirty flag only rebuilds once the game is actually in (states 10/11): method123
+                // finishes by stepping the loading ladder forward (method3379), and running it earlier,
+                // before the login handshake has created the packet cipher, jumps the client into the
+                // in-game state unlogged - the next idle ping then dies on a null cipher.
+                (Canvas_Sub1.mapRegionDirty && (Class240.anInt4674 == 10 || Class240.anInt4674 == 11))
+                || Class318_Sub1_Sub1_Sub2.method2402(Class240.anInt4674, (byte) -120)) Canvas_Sub1.method123(0);
             if (i < 32) aClass262_5185 = null;
             if (Class348_Sub42_Sub8.method3196(Class240.anInt4674, -74) && !Class318_Sub1_Sub1_Sub2.method2402(Class240.anInt4674, (byte) -55)) {
                 method113((byte) 112);
@@ -1897,39 +1904,14 @@ public final class client extends Applet_Sub1 {
 
     private final void method116(boolean bool) {
         anInt5172++;
+        DetachedRenderer.noteFrame();
         if (Class240.anInt4674 != 14) {
             long l = (Class241.method1857((byte) -45) / 1000000L + -Class348_Sub42_Sub2.aLong8573);
             Class348_Sub42_Sub2.aLong8573 = Class241.method1857((byte) -45) / 1000000L;
             boolean bool_118_ = Class286_Sub6.method2163(!bool);
             if (bool_118_ && Class74.aBoolean1236 && Class348_Sub40.aClass279_7042 != null) Class348_Sub40.aClass279_7042.method2087(-115);
-            if (Class260.method1977((byte) -79, Class240.anInt4674)) {
-                if ((Class348_Sub16_Sub2.aLong8866 != 0) && Class62.method599(-98) > Class348_Sub16_Sub2.aLong8866) Class85.method830(Class348_Sub42_Sub12.method3229(-128), Class321.anInt4005, (byte) 102, false, Class348_Sub40_Sub25.anInt9335);
-                else if (!Class348_Sub8.aHa6654.method3655() && Class203.aBoolean2674) Class348_Sub47.method3327(1406);
-            }
-            if (Class34.aFrame476 == null) {
-                java.awt.Container container;
-                if (Class52.aFrame4904 == null) {
-                    if (Class93.anApplet1530 == null) container = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-                    else container = Class93.anApplet1530;
-                } else container = Class52.aFrame4904;
-                int i = container.getSize().width;
-                int i_119_ = container.getSize().height;
-                if (container == Class52.aFrame4904) {
-                    Insets insets = Class52.aFrame4904.getInsets();
-                    i -= insets.left + insets.right;
-                    i_119_ -= insets.top - -insets.bottom;
-                }
-                if (i != Class272.anInt3473 || i_119_ != Class348_Sub22.anInt6857 || RuntimeException_Sub1.aBoolean4604) {
-                    if (Class348_Sub8.aHa6654 == null || Class348_Sub8.aHa6654.method3695()) Class367_Sub11.method3556(false);
-                    else {
-                        Class348_Sub22.anInt6857 = i_119_;
-                        Class272.anInt3473 = i;
-                    }
-                    Class348_Sub16_Sub2.aLong8866 = Class62.method599(-66) - -500L;
-                    RuntimeException_Sub1.aBoolean4604 = false;
-                }
-            }
-            if (Class34.aFrame476 != null && !Class175.aBoolean2329 && Class260.method1977((byte) -79, Class240.anInt4674)) Class85.method830(Class316.aClass348_Sub51_3959.aClass239_Sub8_7227.method1751(-32350), -1, (byte) 102, false, -1);
+            // Display re-setup lives in handleDisplayResize, run by the game thread from its
+            // cycle bookkeeping (Applet_Sub1.method88) — the frame draw here is a pure draw.
             boolean bool_120_ = false;
             if (Class49.aBoolean4726) {
                 bool_120_ = true;
@@ -1974,6 +1956,8 @@ public final class client extends Applet_Sub1 {
                     }
                 }
                 try {
+                    // Frames are paced but drawn on the client thread, so drawRuneLiteOverlays runs
+                    // the plugin callbacks and composites the result on the same thread as always.
                     drawRuneLiteOverlays(Class348_Sub8.aHa6654);
                     if (!Class59_Sub1.aBoolean5300) Class348_Sub8.aHa6654.method3657(Class190.aRectangleArray2554, i, 66);
                     else Class140.method1168(i, 0, Class190.aRectangleArray2554);
@@ -1993,19 +1977,64 @@ public final class client extends Applet_Sub1 {
                 }
             }
             Class62.method598(9013);
-            int i = Class316.aClass348_Sub51_3959.aClass239_Sub17_7263.method1798(-32350);
-            if (i == 0) Class286_Sub5.method2161((byte) -127, 15L);
-            else if (i != 1) {
-                if (i != 2) {
-                    if (i == 3) Class286_Sub5.method2161((byte) -102, 2L);
-                } else Class286_Sub5.method2161((byte) -97, 5L);
-            } else Class286_Sub5.method2161((byte) -104, 10L);
+            // The vanilla per-frame CPU sleep is the game loop's own pacing; with the experimental
+            // renderer on, the loop paces the frames itself and sleeping here as well would hold the
+            // client below the rate it was asked for, so it is skipped.
+            if (!DetachedRenderer.isActive()) {
+                int i = Class316.aClass348_Sub51_3959.aClass239_Sub17_7263.method1798(-32350);
+                if (i == 0) Class286_Sub5.method2161((byte) -127, 15L);
+                else if (i != 1) {
+                    if (i != 2) {
+                        if (i == 3) Class286_Sub5.method2161((byte) -102, 2L);
+                    } else Class286_Sub5.method2161((byte) -97, 5L);
+                } else Class286_Sub5.method2161((byte) -104, 10L);
+            }
             if (Class319.aBoolean3988) Class188.method1416(5);
             if (Class316.aClass348_Sub51_3959.aClass239_Sub11_7265.method1768(-32350) == 1 && Class240.anInt4674 == 3 && r.anInt9721 != -1) {
                 Class316.aClass348_Sub51_3959.method3429((byte) 74, (Class316.aClass348_Sub51_3959.aClass239_Sub11_7265), 0);
                 Class14_Sub2.method243(37);
             }
         }
+    }
+
+    /**
+     * Display re-setup and canvas sizing — the game thread's job only: window resize recovery,
+     * canvas size sync and the fullscreen display-mode change. The detached renderer's frames
+     * are pure draws and skip every line of this, so re-setup (which synchronizes on the applet
+     * and touches AWT) can never run underneath a render-thread frame — that lock cycle is what
+     * froze the client on plugin enable. The game thread runs this from its cycle bookkeeping
+     * instead (Applet_Sub1.method88), detached or not.
+     */
+    static void handleDisplayResize() {
+        if (Thread.currentThread() != Applet_Sub1.currentThread) return;
+        if (Class260.method1977((byte) -79, Class240.anInt4674)) {
+            if ((Class348_Sub16_Sub2.aLong8866 != 0) && Class62.method599(-98) > Class348_Sub16_Sub2.aLong8866) Class85.method830(Class348_Sub42_Sub12.method3229(-128), Class321.anInt4005, (byte) 102, false, Class348_Sub40_Sub25.anInt9335);
+            else if (!Class348_Sub8.aHa6654.method3655() && Class203.aBoolean2674) Class348_Sub47.method3327(1406);
+        }
+        if (Class34.aFrame476 == null) {
+            java.awt.Container container;
+            if (Class52.aFrame4904 == null) {
+                if (Class93.anApplet1530 == null) container = Class348_Sub40_Sub9.anApplet_Sub1_9169;
+                else container = Class93.anApplet1530;
+            } else container = Class52.aFrame4904;
+            int i = container.getSize().width;
+            int i_119_ = container.getSize().height;
+            if (container == Class52.aFrame4904) {
+                Insets insets = Class52.aFrame4904.getInsets();
+                i -= insets.left + insets.right;
+                i_119_ -= insets.top - -insets.bottom;
+            }
+            if (i != Class272.anInt3473 || i_119_ != Class348_Sub22.anInt6857 || RuntimeException_Sub1.aBoolean4604) {
+                if (Class348_Sub8.aHa6654 == null || Class348_Sub8.aHa6654.method3695()) Class367_Sub11.method3556(false);
+                else {
+                    Class348_Sub22.anInt6857 = i_119_;
+                    Class272.anInt3473 = i;
+                }
+                Class348_Sub16_Sub2.aLong8866 = Class62.method599(-66) - -500L;
+                RuntimeException_Sub1.aBoolean4604 = false;
+            }
+        }
+        if (Class34.aFrame476 != null && !Class175.aBoolean2329 && Class260.method1977((byte) -79, Class240.anInt4674)) Class85.method830(Class316.aClass348_Sub51_3959.aClass239_Sub8_7227.method1751(-32350), -1, (byte) 102, false, -1);
     }
 
     static final void method117(int i) {

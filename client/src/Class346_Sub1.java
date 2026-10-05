@@ -61,6 +61,7 @@ final class Class346_Sub1 extends Class346 implements KeyListener, FocusListener
 
     public final synchronized void keyPressed(KeyEvent keyevent) {
         anInt6526++;
+        if (InputHooks.keyPressed(keyevent)) return;
         method2701(keyevent, 0, 0);
     }
 
@@ -99,11 +100,17 @@ final class Class346_Sub1 extends Class346 implements KeyListener, FocusListener
 
     public final synchronized void keyReleased(KeyEvent keyevent) {
         anInt6529++;
+        if (InputHooks.keyReleased(keyevent)) return;
         method2701(keyevent, 0, 1);
     }
 
     public final synchronized void keyTyped(KeyEvent keyevent) {
         anInt6527++;
+        // Listeners must be consulted before the client's own handling below,
+        // because that handling calls consume() on any key it recognises. Taking
+        // the listener's decision afterwards would read the client's own
+        // consumption as a cancellation.
+        if (InputHooks.keyTyped(keyevent)) return;
         char c = keyevent.getKeyChar();
         if (c != 0 && Class122.method1089(-125, c)) {
             method2702(-1, 128, c, 3);

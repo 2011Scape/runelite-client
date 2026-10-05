@@ -176,6 +176,12 @@ final class Class348_Sub40_Sub7 extends Class348_Sub40 {
                                                 if (Class239_Sub5.anInt5891 < 20) i_39_ = -65536;
                                                 Applet_Sub1.aClass324_20.method2569("Fps:" + (Class239_Sub5.anInt5891), i_38_, i_39_, i_37_, -128, -1);
                                                 i_38_ += 15;
+                                                // The pacer reports the frames it actually drew plus its target.
+                                                if (DetachedRenderer.isActive()) {
+                                                    String target = DetachedRenderer.fpsTarget <= 0 ? "uncapped" : (DetachedRenderer.fpsTarget + " fps");
+                                                    Applet_Sub1.aClass324_20.method2569("Renderer: paced, " + DetachedRenderer.framesPerSecond() + " fps (target " + target + ")", i_38_, -256, i_37_, -127, -1);
+                                                    i_38_ += 15;
+                                                }
                                                 Runtime runtime = Runtime.getRuntime();
                                                 int i_40_ = (int) (((runtime.totalMemory()) + -(runtime.freeMemory())) / 1024L);
                                                 int i_41_ = -256;

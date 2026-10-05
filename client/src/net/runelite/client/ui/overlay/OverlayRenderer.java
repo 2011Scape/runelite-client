@@ -575,7 +575,11 @@ public class OverlayRenderer extends MouseAdapter implements KeyListener {
 
         mouseEvent.consume();
         return mouseEvent;*/
-        return null;
+        // The body above is the original implementation, left commented out by the
+        // decompilation. Consuming here is what it intended: a managed-overlay drag
+        // must not also reach the client and rotate the camera.
+        mouseEvent.consume();
+        return mouseEvent;
     }
 
     @Override

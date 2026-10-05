@@ -205,9 +205,11 @@ abstract class Class105_Sub3 extends Class105 {
         if (f_81_ < (float) (this.aHa_Sub1_8460.anInt7476)) f_81_ = (float) (this.aHa_Sub1_8460.anInt7476);
         if (f_82_ > (float) (this.aHa_Sub1_8460.anInt7503)) f_82_ = (float) (this.aHa_Sub1_8460.anInt7503);
         f_80_ = f_79_ - f_80_;
-        if (f_80_ >= 0.0F) return false;
+        // Experimental renderer: with camera-view culling off the face is never rejected here; the
+        // screen-space span setup below still runs, so an off-screen face simply rasterises nothing.
+        if (f_80_ >= 0.0F && !GameTuning.frustumCullingDisabled()) return false;
         f_82_ = f_81_ - f_82_;
-        if (f_82_ >= 0.0F) return false;
+        if (f_82_ >= 0.0F && !GameTuning.frustumCullingDisabled()) return false;
         anInt8453 = this.aHa_Sub1_8460.anInt7477;
         anInt8451 = (int) ((float) ((int) f_81_ * anInt8453) + f_79_);
         float f_83_ = (f_60_ - f) * (f_63_ - f_59_) - (f_61_ - f_59_) * (f_62_ - f);

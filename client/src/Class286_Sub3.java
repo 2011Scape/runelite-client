@@ -315,6 +315,9 @@ final class Class286_Sub3 extends Class286 {
                             int i_36_ = i_23_ << Class362.anInt4459;
                             int i_37_ = i_25_ << Class362.anInt4459;
                             int i_38_ = (Class270.anInt3465 + (i_26_ << Class362.anInt4459));
+                            // Fixed 2000, sized for the vanilla scene; grow it for the experimental
+                            // renderer's larger regions (readers use the live Class69.anInt1200 count).
+                            if (Class69.anInt1200 >= Class318_Sub1_Sub3_Sub4.aClass338Array10330.length) Class318_Sub1_Sub3_Sub4.aClass338Array10330 = java.util.Arrays.copyOf(Class318_Sub1_Sub3_Sub4.aClass338Array10330, Class318_Sub1_Sub3_Sub4.aClass338Array10330.length + 2048);
                             Class318_Sub1_Sub3_Sub4.aClass338Array10330[Class69.anInt1200++] = (new Class338(1, i_28_, class357.aShort4401 + i_36_, class357.aShort4401 + i_36_, class357.aShort4401 + i_36_, class357.aShort4401 + i_36_, i_32_, i_34_, i_35_, i_33_, i_37_, i_38_, i_38_, i_37_));
                             for (int i_39_ = i_27_; i_28_ >= i_39_; i_39_++) {
                                 for (int i_40_ = i_25_; i_26_ >= i_40_; i_40_++)
@@ -344,6 +347,7 @@ final class Class286_Sub3 extends Class286 {
                             int i_52_ = i_41_ << Class362.anInt4459;
                             int i_53_ = ((i_42_ << Class362.anInt4459) + Class270.anInt3465);
                             int i_54_ = i_22_ << Class362.anInt4459;
+                            if (Class69.anInt1200 >= Class318_Sub1_Sub3_Sub4.aClass338Array10330.length) Class318_Sub1_Sub3_Sub4.aClass338Array10330 = java.util.Arrays.copyOf(Class318_Sub1_Sub3_Sub4.aClass338Array10330, Class318_Sub1_Sub3_Sub4.aClass338Array10330.length + 2048);
                             Class318_Sub1_Sub3_Sub4.aClass338Array10330[Class69.anInt1200++] = (new Class338(2, i_44_, i_52_, i_53_, i_53_, i_52_, i_48_, i_50_, i_51_, i_49_, i_54_ + class357.aShort4397, i_54_ + class357.aShort4397, class357.aShort4397 + i_54_, (i_54_ - -class357.aShort4397)));
                             for (int i_55_ = i_43_; i_55_ <= i_44_; i_55_++) {
                                 for (int i_56_ = i_41_; (i_42_ >= i_56_); i_56_++)

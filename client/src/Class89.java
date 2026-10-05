@@ -75,8 +75,15 @@ final class Class89 {
                 }
             }
         }
-        if (bool) Class24.aClass318_Sub1_Sub3Array357[Class86.anInt1477++] = class318_sub1_sub3;
-        else {
+        if (bool) {
+            // The runtime-registered scene entity list was a fixed 5000, sized for the vanilla 104x104
+            // scene; the experimental renderer's larger regions can register more, which overflowed it.
+            // Grow it like the deferred draw queues (Class348_Sub49_Sub1.queueGroundEntity); it is only
+            // ever read and cleared with Class86.anInt1477, so growing it is safe.
+            if (Class86.anInt1477 >= Class24.aClass318_Sub1_Sub3Array357.length)
+                Class24.aClass318_Sub1_Sub3Array357 = java.util.Arrays.copyOf(Class24.aClass318_Sub1_Sub3Array357, Class24.aClass318_Sub1_Sub3Array357.length + 4096);
+            Class24.aClass318_Sub1_Sub3Array357[Class86.anInt1477++] = class318_sub1_sub3;
+        } else {
             int i_22_ = aa_Sub1.aSArray5191 == Class332.aSArray4142 ? 1 : 0;
             if (class318_sub1_sub3.method2376(-118)) {
                 if (class318_sub1_sub3.method2377((byte) 122)) {

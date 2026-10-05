@@ -112,7 +112,33 @@ class DevToolsOverlay extends Overlay
 			renderRoofs(graphics);
 		}
 
+		renderMinimapDiagnostics(graphics);
+
 		return null;
+	}
+
+	/**
+	 * The one line that explains a minimap that is not showing its own current image.
+	 * <p>
+	 * The map has no packet behind it - it is a render of the scene the client keeps -
+	 * so when it is showing the last good image instead of a fresh one, or the region is
+	 * still loading, there is nothing anywhere else in the client to look at. It is
+	 * drawn only while that is true, so a healthy client has nothing here.
+	 */
+	private void renderMinimapDiagnostics(Graphics2D graphics)
+	{
+		String diagnostics = client.getMinimapDiagnostics();
+		if (diagnostics == null)
+		{
+			return;
+		}
+
+		int height = graphics.getFontMetrics().getHeight();
+		int width = graphics.getFontMetrics().stringWidth(diagnostics);
+		graphics.setColor(new Color(0, 0, 0, 160));
+		graphics.fillRect(0, 0, width + 8, height + 4);
+		graphics.setColor(ORANGE);
+		graphics.drawString(diagnostics, 4, height);
 	}
 
 	private void renderRoofs(Graphics2D graphics)

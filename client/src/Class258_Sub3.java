@@ -155,6 +155,9 @@ class Class258_Sub3 extends Class258 {
     }
 
     static final void method1966(int i, int i_43_, int i_44_, int i_45_, byte i_46_, int i_47_, int i_48_, int i_49_, int i_50_) {
+        // The ground-decoration list is a fixed 500 chosen for the vanilla scene; grow it when the
+        // experimental renderer's larger region fills it (readers use the live anInt6115 count).
+        if (Class239_Sub26.anInt6115 >= ChatMessage.aClass338Array2034.length) ChatMessage.aClass338Array2034 = java.util.Arrays.copyOf(ChatMessage.aClass338Array2034, ChatMessage.aClass338Array2034.length + 512);
         ChatMessage.aClass338Array2034[Class239_Sub26.anInt6115++] = new Class338(i_47_, i_49_, i_50_, i, i, i_50_, i_45_, i_43_, i_43_, i_45_, i_44_, i_44_, i_48_, i_48_);
         anInt8548++;
         if (i_46_ != 0) method1968();

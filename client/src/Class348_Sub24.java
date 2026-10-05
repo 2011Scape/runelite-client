@@ -140,6 +140,9 @@ final class Class348_Sub24 extends Node {
                     Class239_Sub18.anInt6033++;
                     Class369_Sub3_Sub1.aBoolean10174 = false;
                     ChatMessage.anInt2035 = 20;
+                    // The idle packet going out is the AFK signal: drop the view distance to the
+                    // lowest gated value until the player interacts again (GameTuning).
+                    GameTuning.onIdlePacketSent();
                     Class348_Sub47 class348_sub47 = Class286_Sub3.method2148(Class281.aClass351_3648, (Class348_Sub23_Sub2.aClass77_9029), i + -11549);
                     class348_sub47.aClass348_Sub49_Sub2_7116.writeShortAddLittle(i ^ 0x3c4d, (int) Class314.aFloat3938 >> 3);
                     class348_sub47.aClass348_Sub49_Sub2_7116.writeShort((byte) 107, (int) Class76.aFloat1287 >> 3);
@@ -325,10 +328,13 @@ final class Class348_Sub24 extends Node {
                         Class320.overGameScreen = false;
                         Class216.method1583((byte) -73);
                         Class311.anInt3918++;
-                        if (Class320.overGameScreen && Class320.scrollWheelDiff != 0 && !Class351.aBoolean4328) {
-                            if (Class182.aClass346_2449.method2696(82, -125)) {
-                                Class320.zoomStep += -Class320.scrollWheelDiff * Loader.ZOOM_OFFSET_STEP;
-                            }
+                        // The ctrl + wheel zoom and alt + wheel view distance are dispatched here.
+                        // The mouse-over-game-screen flag this used to also require is set by
+                        // method1583 above (through method107) but is not reliably true over the 3D
+                        // viewport, so gating on it left the wheel dead. This method only runs in the
+                        // in-game states, which is the gate the wheel actually needs.
+                        if (Class320.scrollWheelDiff != 0 && !Class351.aBoolean4328) {
+                            GameTuning.handleGameWheelScroll(Class320.scrollWheelDiff);
                         }
                         if (Class237.aBoolean3103) {
                             Class98.anInt1568++;

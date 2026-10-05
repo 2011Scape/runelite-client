@@ -4,6 +4,8 @@
 
 import java.math.BigInteger;
 
+import net.runelite.client.util.OSType;
+
 abstract class Class318_Sub1_Sub4 extends SceneEntity {
     static int anInt8757;
     static int anInt8758;
@@ -41,6 +43,15 @@ abstract class Class318_Sub1_Sub4 extends SceneEntity {
     static final int method2478(int i) {
         if (i != 1000) return -103;
         anInt8763++;
+        // macOS: the native OpenGL toolkit (jaggl) cannot attach to the AWT canvas on modern macOS
+        // JDKs - every attempt logs "JavaVM WARNING: JAWT_GetAWT must be called after loading a JVM"
+        // and draws nothing, and the Windows-only sw3d/jagdx toolkits are absent too. The auto-detect
+        // would otherwise keep probing on every retry and never settle, so on macOS go straight to the
+        // Java software renderer, which draws through Java2D and works everywhere. Windows and Linux
+        // are untouched, so the OpenGL/D3D selection there is unchanged.
+        if (OSType.getOSType() == OSType.MacOS) {
+            return Class314_Sub1.method2348(-8454);
+        }
         boolean bool = false;
         boolean bool_5_ = false;
         boolean bool_6_ = false;

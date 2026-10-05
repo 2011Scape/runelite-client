@@ -24,14 +24,12 @@ final class Class290 {
     }
 
     static final void method2196(byte i) {
-        Class239_Sub19.anInt6043 = (int) ((double) Class367_Sub4.anInt7319 * 34.46);
+        // The vanilla far plane was (int)(scene * 34.46) << 2; GameTuning.farPlane builds it from
+        // the same coefficient with open592's scale instead, so the fog horizon is where open592's
+        // is (just inside the drawn radius) and the wheel visibly moves it.
+        Class239_Sub19.anInt6043 = GameTuning.farPlane(Class367_Sub4.anInt7319);
         Class348_Sub33.anInt6964 = 200;
         anInt3716++;
-        if (i == -9) {
-            Class239_Sub19.anInt6043 <<= 2;
-            if (Class348_Sub8.aHa6654.method3670()) Class239_Sub19.anInt6043 += 512;
-        }
-        Class239_Sub19.anInt6043 = (int) (Class239_Sub19.anInt6043 * Loader.CULLING_DISTANCE_MULTIPLIER);
         if (i == -9) {
             Class226.method1626(1, false);
         }

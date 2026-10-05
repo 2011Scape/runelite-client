@@ -79,11 +79,6 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
     public static boolean aBoolean52;
     public static Thread currentThread;
     private static Applet parameterApplet;
-    private boolean stretchedEnabled;
-    private boolean stretchedFast;
-    private boolean stretchedIntegerScaling;
-    private boolean stretchedKeepAspectRatio = true;
-    private int scalingFactor = 100;
     private boolean animationSmoothingEnabled;
     private static BufferedImage runeLiteOverlayImage;
     private static int[] runeLiteOverlayPixels;
@@ -164,6 +159,8 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
         synchronized (this) {
             Class175.aBoolean2329 = Class348_Sub40_Sub16.aBoolean9229;
         }
+        // The game cycle and the frame both run on this thread (DetachedRenderer is a pacer, not
+        // a second thread), so a cycle can never overlap a frame: it advances game state only.
         method99((byte) 93);
         if (i != -1) aBoolean27 = true;
     }
@@ -261,6 +258,9 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
             Class239_Sub5.anInt5891 = (32000 + (i_3_ >> 1)) / i_3_;
         }
         Class152.anInt2071 = Class152.anInt2071 - -1 & 0x1f;
+        // Everything here already runs on the client thread - the pacer draws frames here too - so
+        // a resize simply can never tear down a surface mid-draw. The frame prep, the draw and the
+        // AWT bookkeeping share this one thread exactly as they always relied on.
         if (Class159.anInt2127++ > 50) {
             Class159.anInt2127 -= 50;
             Class49.aBoolean4726 = true;
@@ -271,8 +271,21 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
                 applyCanvasLocation(Class52.aFrame4904, (insets.left - -Class348_Sub48.anInt7129), (insets.top + Class335.anInt4167));
             } else applyCanvasLocation(Class305.aCanvas3869.getParent(), Class348_Sub48.anInt7129, Class335.anInt4167);
         }
+        client.handleDisplayResize();
+        if (DetachedRenderer.consumeCanvasRefreshRequest()) {
+            // A live renderer toggle: rebuild the canvas and GL surface on the client thread, with
+            // no frame in flight, before the next frame draws. This is the graceful canvas
+            // transition the switch needs.
+            Class367_Sub11.method3556(false);
+            Class49.aBoolean4726 = true;
+        }
+        // The frame is drawn here, on the client thread, whether the pacer is on or off. With it
+        // off this is the vanilla one-frame-per-cycle draw; with it on the loop calls this once
+        // per paced frame instead. Either way the RuneLite overlay callbacks (which draw()) run on
+        // the client thread, so plugin callback affinity is preserved without any hand-off. The
+        // plugin client-tick loop is fired by the game loop once per cycle, not here, so it keeps
+        // the cycle rate when frames come faster.
         method93(-11018);
-        fireRuneLiteClientLoop();
         if (i > -107) method90(true, true);
     }
 
@@ -285,12 +298,9 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
         }
     }
 
-    static void drawRuneLiteOverlays(ha renderer) {
+    static void prepareRuneLiteOverlays() {
         try {
-            if (RuneLite.getInjector() == null || renderer == null) {
-                return;
-            }
-
+            if (RuneLite.getInjector() == null) return;
             int width = Math.max(1, Class321.anInt4017);
             int height = Math.max(1, Class348_Sub42_Sub8_Sub2.anInt10432);
             ensureRuneLiteOverlayBuffer(width, height);
@@ -305,14 +315,24 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
             } finally {
                 graphics.dispose();
             }
+        } catch (Throwable failure) {
+            if (Loader.trace) failure.printStackTrace();
+        }
+    }
 
-            if (!hasRuneLiteOverlayPixels()) {
-                return;
-            }
-
+    static void drawRuneLiteOverlays(ha renderer) {
+        try {
+            if (renderer == null) return;
+            // Frames are paced but drawn on the client thread, so the callbacks and the composite
+            // both run here: plugin callback thread affinity is preserved with no hand-off.
+            prepareRuneLiteOverlays();
+            if (!hasRuneLiteOverlayPixels()) return;
+            int width = runeLiteOverlayWidth;
+            int height = runeLiteOverlayHeight;
             Class105 sprite = renderer.method3711(runeLiteOverlayPixels, 0, width, width, height, false);
             sprite.method970(0, 0, width, height, 1, -1, 1);
-        } catch (Throwable ignored) {
+        } catch (Throwable failure) {
+            if (Loader.trace) failure.printStackTrace();
         }
     }
 
@@ -376,6 +396,7 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
             Class26.aBoolean384 = true;
         }
         System.out.println("Shutdown start - clean:" + bool);
+        DetachedRenderer.shutdown();
         if (Class93.anApplet1530 != null) Class93.anApplet1530.destroy();
         if (bool_4_ != false) aBoolean17 = false;
         try {
@@ -501,12 +522,43 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
                 method87((byte) -97);
                 method92(28740);
                 Class348_Sub8.aClass241_6660 = Class229.method1631(false);
+                // The loop is paced exactly like open592's: each pass polls the cycle timer without
+                // sleeping, runs the cycles that are due, draws a frame if the pacer says one is due,
+                // then waits for whichever comes first - the next frame or the next cycle. The logic
+                // therefore keeps its own 20 ms rate (Class73.aLong4783) while frames can come faster;
+                // nothing in the frame advances game time, so extra frames cannot speed the game up.
+                // With the pacer off this is the vanilla loop unchanged: the timer sleeps to the next
+                // cycle and one frame is drawn per pass.
                 while (Class113.aLong1739 == 0L || (Class62.method599(-124) < Class113.aLong1739)) {
-                    Class101_Sub2.anInt5744 = Class348_Sub8.aClass241_6660.method1861(0, Class73.aLong4783);
+                    boolean detached = DetachedRenderer.isActive();
+                    Class101_Sub2.anInt5744 = detached
+                        ? Class348_Sub8.aClass241_6660.pollCycles(0, Class73.aLong4783)
+                        : Class348_Sub8.aClass241_6660.method1861(0, Class73.aLong4783);
                     for (int i = 0; Class101_Sub2.anInt5744 > i; i++)
                         method84(-1);
-                    method88(-119);
+
+                    long frameNow = System.nanoTime();
+                    if (!detached || DetachedRenderer.frameDue(frameNow)) {
+                        if (detached) DetachedRenderer.frameDrawn(frameNow);
+                        method88(-119);
+                    }
+                    // The RuneLite plugin loop is a client-tick callback: it has to fire at the game
+                    // cycle rate (50 Hz), not the frame rate. Firing it from the frame (once per
+                    // drawn frame) made every CLIENT_TICK-driven plugin animation run 3.6x too fast
+                    // once the pacer raised the frame rate. A pass with no due cycle has no client
+                    // tick to report, so it is skipped; the vanilla loop always runs a cycle.
+                    if (Class101_Sub2.anInt5744 > 0)
+                        fireRuneLiteClientLoop();
                     Class369_Sub3_Sub1.method3578((byte) -42, Class305.aCanvas3869, (Class348_Sub23_Sub1.aClass297_8992));
+
+                    if (detached) {
+                        long wait = DetachedRenderer.millisUntilNextFrame(frameNow);
+                        long cycleWait = (Class348_Sub8.aClass241_6660.nanosToNextCycle() + 999999L) / 1000000L;
+                        if (cycleWait < wait) wait = cycleWait;
+                        // NB: -127, not -42: Class286_Sub5.method2161 evaluates 70 % ((i + 52) / 32)
+                        // and any i whose (i + 52) / 32 is 0 divides by zero.
+                        Class286_Sub5.method2161((byte) -127, wait < 1L ? 1L : wait);
+                    }
                 }
             } catch (Throwable throwable) {
                 Class156.method1242(method81((byte) 109), throwable, 15004);
@@ -518,28 +570,19 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
     }
 
     static Dimension getActiveCanvasSize() {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        if (applet != null && applet.shouldStretchCanvas()) {
-            return applet.getStretchedDimensions();
-        }
         return new Dimension(Class321.anInt4017, Class348_Sub42_Sub8_Sub2.anInt10432);
     }
 
     static boolean shouldScaleCanvasFrame() {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        return applet != null && applet.shouldStretchCanvas() && Class348_Sub8.aHa6654 instanceof ha_Sub1;
+        return false;
     }
 
     static boolean shouldScaleOpenGLFrame() {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        return applet != null
-                && applet.shouldStretchCanvas()
-                && (Class348_Sub8.aHa6654 instanceof ha_Sub2 || Class348_Sub8.aHa6654 instanceof Class377 || Class348_Sub8.aHa6654 instanceof Class378);
+        return false;
     }
 
     static boolean useFastCanvasScaling() {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        return applet != null && applet.stretchedFast;
+        return false;
     }
 
     static void applyCanvasSize() {
@@ -562,16 +605,6 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
             return;
         }
 
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        if (applet != null && applet.shouldStretchCanvas() && container != null) {
-            Dimension size = getActiveCanvasSize();
-            Insets insets = container.getInsets();
-            int width = Math.max(0, container.getWidth() - insets.left - insets.right);
-            int height = Math.max(0, container.getHeight() - insets.top - insets.bottom);
-            x = insets.left + Math.max(0, (width - size.width) / 2);
-            y = insets.top + Math.max(0, (height - size.height) / 2);
-        }
-
         Class305.aCanvas3869.setLocation(x, y);
     }
 
@@ -582,12 +615,7 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
         }
 
         try {
-            Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-            if (applet != null) {
-                applet.invalidateStretching(true);
-            } else {
-                applyCanvasSize();
-            }
+            applyCanvasSize();
             revalidateDisplayTree(canvas);
         } catch (Throwable throwable) {
             revalidateDisplayTree(canvas);
@@ -709,23 +737,11 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
     }
 
     static int scaleMouseX(int x) {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        if (applet == null || !applet.shouldStretchCanvas() || Class305.aCanvas3869 == null) {
-            return x;
-        }
-
-        int width = Math.max(1, Class305.aCanvas3869.getWidth());
-        return Math.max(0, Math.min(Class321.anInt4017 - 1, (int) Math.round((double) x * Class321.anInt4017 / width)));
+        return x;
     }
 
     static int scaleMouseY(int y) {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        if (applet == null || !applet.shouldStretchCanvas() || Class305.aCanvas3869 == null) {
-            return y;
-        }
-
-        int height = Math.max(1, Class305.aCanvas3869.getHeight());
-        return Math.max(0, Math.min(Class348_Sub42_Sub8_Sub2.anInt10432 - 1, (int) Math.round((double) y * Class348_Sub42_Sub8_Sub2.anInt10432 / height)));
+        return y;
     }
 
     @Override
@@ -753,153 +769,20 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
     }
 
     @Override
-    public Dimension getStretchedDimensions() {
-        int baseW = Math.max(1, Class321.anInt4017);
-        int baseH = Math.max(1, Class348_Sub42_Sub8_Sub2.anInt10432);
-        Dimension base = new Dimension(baseW, baseH);
-        if (!shouldStretchCanvas()) {
-            return base;
-        }
-
-        int contW;
-        int contH;
-        Container parent = Class305.aCanvas3869 != null ? Class305.aCanvas3869.getParent() : getParent();
-        if (parent != null && parent.getWidth() > 0 && parent.getHeight() > 0) {
-            Insets insets = parent.getInsets();
-            contW = Math.max(1, parent.getWidth() - insets.left - insets.right);
-            contH = Math.max(1, parent.getHeight() - insets.top - insets.bottom);
-        } else {
-            contW = Math.max(1, Class272.anInt3473);
-            contH = Math.max(1, Class348_Sub22.anInt6857);
-        }
-
-        double fit = Math.min((double) contW / baseW, (double) contH / baseH);
-
-        if (stretchedIntegerScaling) {
-            double rounded = Math.rint(fit);
-            double scale = (rounded > fit && rounded - fit <= 0.03) ? rounded : Math.floor(fit);
-            scale = Math.max(1.0, scale);
-            int width = (int) Math.round(baseW * scale);
-            int height = (int) Math.round(baseH * scale);
-            return new Dimension(Math.min(contW, Math.max(1, width)), Math.min(contH, Math.max(1, height)));
-        }
-
-        if (stretchedKeepAspectRatio) {
-            int width = (int) Math.round(baseW * fit);
-            int height = (int) Math.round(baseH * fit);
-            return new Dimension(Math.max(1, width), Math.max(1, height));
-        }
-
-        return new Dimension(contW, contH);
-    }
-
-    static void applyStretchedLogicalSize() {
-        Applet_Sub1 applet = Class348_Sub40_Sub9.anApplet_Sub1_9169;
-        if (applet == null || !applet.stretchedEnabled) {
-            return;
-        }
-        int mode = Class348_Sub42_Sub12.method3229(-86);
-        if (mode != 2) {
-            return;
-        }
-        double scale = Math.max(25, Math.min(800, applet.scalingFactor)) / 100.0;
-        if (Math.abs(scale - 1.0) < 0.001) {
-            return;
-        }
-        int logicalW = Math.max(256, (int) Math.round(Class321.anInt4017 / scale));
-        int logicalH = Math.max(192, (int) Math.round(Class348_Sub42_Sub8_Sub2.anInt10432 / scale));
-        Class321.anInt4017 = logicalW;
-        Class348_Sub42_Sub8_Sub2.anInt10432 = logicalH;
-    }
-
-    private boolean shouldStretchCanvas() {
-        if (!stretchedEnabled) {
-            return false;
-        }
-        int mode = Class348_Sub42_Sub12.method3229(-86);
-        return mode == 1 || mode == 2;
-    }
-
-    @Override
-    public void setStretchedEnabled(boolean state) {
-        boolean changed = stretchedEnabled != state;
-        stretchedEnabled = state;
-        if (changed) {
-            refreshCanvasAfterDisplayChange();
-        }
-    }
-
-    @Override
-    public boolean isStretchedEnabled() {
-        return stretchedEnabled;
-    }
-
-    @Override
-    public void setStretchedFast(boolean state) {
-        stretchedFast = state;
-    }
-
-    @Override
-    public boolean isStretchedFast() {
-        return stretchedFast;
-    }
-
-    @Override
-    public void setStretchedIntegerScaling(boolean state) {
-        stretchedIntegerScaling = state;
-    }
-
-    @Override
-    public boolean isStretchedIntegerScaling() {
-        return stretchedIntegerScaling;
-    }
-
-    @Override
-    public void setStretchedKeepAspectRatio(boolean state) {
-        stretchedKeepAspectRatio = state;
-    }
-
-    @Override
-    public boolean isStretchedKeepAspectRatio() {
-        return stretchedKeepAspectRatio;
-    }
-
-    @Override
-    public void setScalingFactor(int factor) {
-        scalingFactor = Math.max(25, Math.min(800, factor));
-    }
-
-    @Override
-    public int getScalingFactor() {
-        return scalingFactor;
-    }
-
-    @Override
     public void invalidateStretching(boolean resize) {
         if (!resize) {
             repaint();
             return;
         }
 
-        boolean onGameThread = currentThread != null && Thread.currentThread() == currentThread;
-        if (onGameThread) {
+        if (currentThread != null && Thread.currentThread() == currentThread) {
             try {
                 Class367_Sub11.method3556(false);
             } catch (Throwable ignored) {
             }
-            Container parent = getParent();
-            if (parent != null) {
-                parent.invalidate();
-            }
-            return;
         }
 
-        int mode = Class348_Sub42_Sub12.method3229(-86);
-        if (mode == 2) {
-            Class286_Sub5.method2158((byte) 56);
-        }
-
-        Dimension size = stretchedEnabled ? getStretchedDimensions() : new Dimension(Class321.anInt4017, Class348_Sub42_Sub8_Sub2.anInt10432);
+        Dimension size = new Dimension(Class321.anInt4017, Class348_Sub42_Sub8_Sub2.anInt10432);
         Canvas canvas = getCanvas();
         if (canvas != null) {
             if (!size.equals(canvas.getPreferredSize())) {
@@ -933,6 +816,166 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
     @Override
     public boolean isAnimationSmoothingEnabled() {
         return animationSmoothingEnabled;
+    }
+
+    @Override
+    public void setDetachedRendererEnabled(boolean enabled) {
+        DetachedRenderer.requestActive(enabled);
+    }
+
+    @Override
+    public void setDetachedRendererFpsTarget(int fps) {
+        DetachedRenderer.setFpsTarget(fps);
+    }
+
+    @Override
+    public void setAfkSaverEnabled(boolean enabled) {
+        GameTuning.afkSaverEnabled = enabled;
+    }
+
+    @Override
+    public void setAfkSaverGracePackets(int packets) {
+        GameTuning.afkGracePackets = packets;
+    }
+
+    @Override
+    public void setShowFpsOverlay(boolean show) {
+        Class298.aBoolean3811 = show;
+    }
+
+    @Override
+    public void setRenderDistance(int tiles) {
+        GameTuning.setRenderDistance(tiles);
+    }
+
+    @Override
+    public void setFogScale(int percent) {
+        GameTuning.setFogScale(percent);
+    }
+
+    @Override
+    public void setCullingDisabled(boolean disabled) {
+        GameTuning.setCullingDisabled(disabled);
+    }
+
+    @Override
+    public void setCullingDistance(int tiles) {
+        GameTuning.setCullingDistance(tiles);
+    }
+
+    @Override
+    public void setDrawRadiusScale(int percent) {
+        GameTuning.setDrawRadiusScale(percent);
+    }
+
+    @Override
+    public void setClampFogToBuiltMap(boolean clamp) {
+        GameTuning.setClampFogToBuiltMap(clamp);
+    }
+
+    @Override
+    public void setViewCullingDisabled(boolean disabled) {
+        GameTuning.setViewCullingDisabled(disabled);
+    }
+
+    @Override
+    public void setHideUpperFloors(boolean hide) {
+        GameTuning.setHideUpperFloors(hide);
+    }
+
+    @Override
+    public void setZoom(int offset) {
+        GameTuning.setZoom(offset);
+    }
+
+    @Override
+    public void setFogColour(int rgb) {
+        GameTuning.setFogColour(rgb);
+    }
+
+    @Override
+    public int getViewDistance() {
+        return GameTuning.engagedViewDistance();
+    }
+
+    @Override
+    public int getZoomOffset() {
+        return GameTuning.zoomOffset();
+    }
+
+    @Override
+    public int getFogScale() {
+        return GameTuning.fogScalePercent();
+    }
+
+    @Override
+    public int getDrawRadiusScale() {
+        return GameTuning.drawRadiusScalePercent();
+    }
+
+    @Override
+    public int getCullingDistance() {
+        return GameTuning.cullingDistance();
+    }
+
+    @Override
+    public boolean isCullingDisabled() {
+        return GameTuning.cullingDisabled();
+    }
+
+    @Override
+    public boolean isViewCullingDisabled() {
+        return GameTuning.viewCullingDisabled();
+    }
+
+    @Override
+    public boolean isHideUpperFloors() {
+        return GameTuning.hideUpperFloors();
+    }
+
+    @Override
+    public boolean isClampFogToBuiltMap() {
+        return GameTuning.clampFogToBuiltMap();
+    }
+
+    @Override
+    public int getFogColour() {
+        return GameTuning.fogColour();
+    }
+
+    @Override
+    public int getFpsTarget() {
+        return DetachedRenderer.getFpsTarget();
+    }
+
+    @Override
+    public boolean isShowFpsOverlay() {
+        return Class298.isFpsOverlayShown();
+    }
+
+    @Override
+    public void snapRendererTuning() {
+        GameTuning.snapViewTuning();
+    }
+
+    @Override
+    public void resetWheelTuning() {
+        GameTuning.resetWheelTuning();
+    }
+
+    @Override
+    public void setTuningChangeListener(Runnable listener) {
+        GameTuning.setTuningChangeListener(listener);
+    }
+
+    @Override
+    public void forceSceneRebuild() {
+        GameTuning.forceSceneRebuild();
+    }
+
+    @Override
+    public void resetSceneSize() {
+        GameTuning.resetSceneSize();
     }
 
     @Override
@@ -1148,6 +1191,10 @@ public abstract class Applet_Sub1 extends GameClient implements Runnable, FocusL
     }
 
     @Override
+    public String getMinimapDiagnostics() {
+        return MinimapDebug.warning();
+    }
+
     public NpcHullInfo getNpcHull(int npcIndex) {
         return NpcHullHooks.get(npcIndex);
     }

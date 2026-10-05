@@ -65,7 +65,17 @@ final class Class239_Sub14 extends Class239 {
         anInt5983++;
         if (Class348_Sub31.anInt6923 == -1) return 1;
         if (i != Class316.aClass348_Sub51_3959.aClass239_Sub25_7271.method1829(-32350)) {
-            Class258_Sub3_Sub1.method1971(-2, Class274.aClass274_3496.method2063(Class348_Sub33.anInt6967, 544), true, i);
+            // Switching the toolkit can fail when the renderer's native library is missing or will not
+            // load - notably the software/OpenGL "sw3d" toolkit on Linux, where the client otherwise
+            // aborts the game thread. Treat the failure like any other unavailable toolkit and return
+            // -1 so the caller (the toolkit auto-detect at start-up) falls through to the next one.
+            // The switch below is outside the try{} that only guards the benchmark further down.
+            try {
+                Class258_Sub3_Sub1.method1971(-2, Class274.aClass274_3496.method2063(Class348_Sub33.anInt6967, 544), true, i);
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+                return -1;
+            }
             if (i != Class316.aClass348_Sub51_3959.aClass239_Sub25_7271.method1829(-32350)) return -1;
         }
         try {

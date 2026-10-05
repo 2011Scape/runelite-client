@@ -313,6 +313,8 @@ final class ha_Sub2 extends ha {
     int anInt7812;
     int anInt7813;
     private int anInt7814;
+    /** The dedicated fog end distance; clipping and the projection keep using {@link #anInt7814}. */
+    private int anIntFogEnd = 3584;
     boolean aBoolean7815;
     float aFloat7816;
     private Interface8 anInterface8_7817;
@@ -384,6 +386,10 @@ final class ha_Sub2 extends ha {
     int[] anIntArray7883;
 
     final void L(int i, int i_0_, int i_1_) {
+        // The experimental renderer's fog/sky colour override. The 0 the sky dome passes means
+        // "no fog" and is left alone; the environment's own colour is replaced with the override.
+        int override = GameTuning.fogColour();
+        if (override >= 0 && i != 0) i = override;
         if (i != this.anInt7856 || i_0_ != this.anInt7782 || this.anInt7813 != i_1_) {
             this.anInt7782 = i_0_;
             this.anInt7856 = i;
@@ -711,13 +717,8 @@ final class ha_Sub2 extends ha {
         anInt7680++;
         if (aCanvas7575 != null) {
             Dimension dimension = aCanvas7575.getSize();
-            if (Applet_Sub1.shouldScaleOpenGLFrame()) {
-                anInt7645 = Class321.anInt4017;
-                anInt7523 = Class348_Sub42_Sub8_Sub2.anInt10432;
-            } else {
-                anInt7645 = dimension.width;
-                anInt7523 = dimension.height;
-            }
+            anInt7645 = dimension.width;
+            anInt7523 = dimension.height;
         } else anInt7645 = anInt7523 = 0;
         if (i > 61) {
             if (anInterface11_7740 == null) {
@@ -1037,6 +1038,25 @@ final class ha_Sub2 extends ha {
 
     final void method3650(int i) {
         anInt7646++;
+    }
+
+    @Override
+    boolean requiresThreadHandoff() {
+        return true;
+    }
+
+    @Override
+    boolean detachRenderThreadContext() {
+        return anOpenGL7664 != null && anOpenGL7664.a();
+    }
+
+    @Override
+    boolean attachRenderThreadContext() {
+        if (anOpenGL7664 == null || !anOpenGL7664.b()) return false;
+        // Re-select whichever surface the client last drew to, falling back to the primary canvas
+        // surface, so a handoff never silently retargets the frame.
+        long surface = aLong7636 != 0L ? aLong7636 : aLong7553;
+        return anOpenGL7664.setSurface(surface);
     }
 
     ha_Sub2(Canvas canvas, d var_d, int i) {
@@ -3471,7 +3491,7 @@ final class ha_Sub2 extends ha {
     }
 
     private final void method3803(int i) {
-        aFloat7824 = -aFloat7786 + (float) (anInt7814 - this.anInt7813);
+        aFloat7824 = -aFloat7786 + (float) (anIntFogEnd - this.anInt7813);
         anInt7639++;
         this.aFloat7792 = aFloat7824 - aFloat7857 * (float) this.anInt7782;
         if ((float) this.anInt7826 > this.aFloat7792) this.aFloat7792 = (float) this.anInt7826;
@@ -3505,11 +3525,23 @@ final class ha_Sub2 extends ha {
         if (i != this.anInt7826 || anInt7814 != i_458_) {
             this.anInt7826 = i;
             anInt7814 = i_458_;
+            // The far plane sets the fog end too; setFogEnd splits them apart when wanted.
+            anIntFogEnd = i_458_;
             method3806(98);
             method3803(16711680);
             if (anInt7865 == 3) method3747((byte) -63);
             else if (anInt7865 == 2) method3730((byte) 121);
         }
+    }
+
+    /**
+     * Sets the fog end independently of the far clip plane. The GL fog range is rebuilt from this
+     * ({@code method3803} pushes it to {@code glFogf}), so the fog horizon moves while the projection
+     * and the far clip stay where {@link #f(int, int)} put them.
+     */
+    final void setFogEnd(int fogEnd) {
+        this.anIntFogEnd = fogEnd;
+        method3803(16711680);
     }
 
     final void method3658(int i, int i_459_, int i_460_, int i_461_) {
@@ -3648,30 +3680,6 @@ final class ha_Sub2 extends ha {
 
     final int[] na(int i, int i_474_, int i_475_, int i_476_) {
         anInt7622++;
-        if (Applet_Sub1.shouldScaleOpenGLFrame() && aCanvas7575 != null) {
-            Dimension dimension = aCanvas7575.getSize();
-            int actualH = dimension.height;
-            double scaleX = (double) dimension.width / Math.max(1, this.anInt7688);
-            double scaleY = (double) actualH / Math.max(1, this.anInt7641);
-            int px = (int) Math.floor(i * scaleX);
-            int py = (int) Math.floor(i_474_ * scaleY);
-            int pw = Math.max(1, (int) Math.ceil(i_475_ * scaleX));
-            int ph = Math.max(1, (int) Math.ceil(i_476_ * scaleY));
-            int[] pixels = new int[pw * ph];
-            for (int r = 0; ph > r; r++)
-                OpenGL.glReadPixelsi(px, (-py + actualH + -r), pw, 1, 32993, this.anInt7812, pixels, pw * r);
-            int[] out = new int[i_475_ * i_476_];
-            for (int y = 0; y < i_476_; y++) {
-                int srcY = Math.min(ph - 1, (int) ((y + 0.5) * scaleY));
-                int rowOff = srcY * pw;
-                int dstOff = y * i_475_;
-                for (int x = 0; x < i_475_; x++) {
-                    int srcX = Math.min(pw - 1, (int) ((x + 0.5) * scaleX));
-                    out[dstOff + x] = pixels[rowOff + srcX];
-                }
-            }
-            return out;
-        }
         int[] is = new int[i_475_ * i_476_];
         for (int i_477_ = 0; i_476_ > i_477_; i_477_++)
             OpenGL.glReadPixelsi(i, (-i_474_ + this.anInt7641 + -i_477_), i_475_, 1, 32993, this.anInt7812, is, i_475_ * i_477_);
@@ -3679,12 +3687,7 @@ final class ha_Sub2 extends ha {
     }
 
     private final void method3809(boolean bool) {
-        if (Applet_Sub1.shouldScaleOpenGLFrame() && aCanvas7575 != null) {
-            Dimension dimension = aCanvas7575.getSize();
-            OpenGL.glViewport(anInt7770, anInt7867, dimension.width, dimension.height);
-        } else {
-            OpenGL.glViewport(anInt7770, anInt7867, this.anInt7688, this.anInt7641);
-        }
+        OpenGL.glViewport(anInt7770, anInt7867, this.anInt7688, this.anInt7641);
         anInt7718++;
         if (bool != true) this.aClass64_Sub3_7780 = null;
     }
@@ -3706,16 +3709,7 @@ final class ha_Sub2 extends ha {
     private final void method3811(byte i) {
         anInt7690++;
         if (i == 11) {
-            if (Applet_Sub1.shouldScaleOpenGLFrame() && aCanvas7575 != null && anInt7855 >= anInt7868 && anInt7773 <= anInt7787) {
-                Dimension dimension = aCanvas7575.getSize();
-                double scaleX = (double) dimension.width / Math.max(1, this.anInt7688);
-                double scaleY = (double) dimension.height / Math.max(1, this.anInt7641);
-                OpenGL.glScissor(
-                        anInt7770 + (int) Math.floor(anInt7868 * scaleX),
-                        anInt7867 + dimension.height - (int) Math.ceil(anInt7787 * scaleY),
-                        Math.max(0, (int) Math.ceil((-anInt7868 + anInt7855) * scaleX)),
-                        Math.max(0, (int) Math.ceil((-anInt7773 + anInt7787) * scaleY)));
-            } else if (anInt7855 >= anInt7868 && anInt7773 <= anInt7787) OpenGL.glScissor(anInt7770 + anInt7868, (anInt7867 + this.anInt7641 - anInt7787), -anInt7868 + anInt7855, -anInt7773 + anInt7787);
+            if (anInt7855 >= anInt7868 && anInt7773 <= anInt7787) OpenGL.glScissor(anInt7770 + anInt7868, (anInt7867 + this.anInt7641 - anInt7787), -anInt7868 + anInt7855, -anInt7773 + anInt7787);
             else OpenGL.glScissor(0, 0, 0, 0);
         }
     }

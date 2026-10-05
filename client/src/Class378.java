@@ -8,6 +8,17 @@ import jagdx.*;
 import java.awt.*;
 
 public final class Class378 extends ha_Sub3 {
+    /**
+     * The Direct3D device is created with {@code D3DCREATE_MULTITHREADED} (see the create flags
+     * below), so it may be driven from the render thread as long as calls are serialized - which
+     * they are, since the detached renderer and the game thread share one scene lock. No explicit
+     * context transfer is needed, unlike the OpenGL backends.
+     */
+    @Override
+    boolean requiresThreadHandoff() {
+        return false;
+    }
+
     private static final int DIRECT3D_SDK_VERSION = 0x80000020;
     private static final int D3DADAPTER_DEFAULT = 0;
     private static final int D3DDEVTYPE_HAL = 1;

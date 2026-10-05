@@ -46,6 +46,15 @@ final class Class241_Sub2 extends Class241 {
         return aLong6161;
     }
 
+    final long nanosToNextCycle() {
+        long l = aLong6160 - aLong6161;
+        return l < 0L ? 0L : l;
+    }
+
+    final boolean cycleDue() {
+        return aLong6161 >= aLong6160;
+    }
+
     Class241_Sub2() {
         aLong6160 = 0L;
         anInt6163 = 0;

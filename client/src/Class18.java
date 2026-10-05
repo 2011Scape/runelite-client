@@ -45,7 +45,10 @@ final class Class18 {
         aa var_aa = class46.method425(Class348_Sub8.aHa6654, (byte) 19);
         if (var_aa != null) {
             Class348_Sub8.aHa6654.KA(i_1_, i, class46.anInt709 + i_1_, i - -class46.anInt789);
-            if (Class259.anInt3306 >= 3) Class348_Sub8.aHa6654.A(-16777216, var_aa, i_1_, i);
+            // The compass map's own blank-out, keyed off the same server map state as the
+            // minimap's (Class107.method1007) and behind the same override, so the two
+            // halves of the map cannot disagree about whether the server asked for a blank.
+            if (Class259.anInt3306 >= 3 && !Loader.IGNORE_MINIMAP_BLACKOUT) Class348_Sub8.aHa6654.A(-16777216, var_aa, i_1_, i);
             else NPCType.aClass105_1365.method976(((float) class46.anInt709 / 2.0F + (float) i_1_), (float) i + (float) class46.anInt789 / 2.0F, 4096, (0x3fff & (int) -Class314.aFloat3938) << 2, var_aa, i_1_, i);
             if (i_0_ != -98) method271(88, null, (byte) 15, 71);
         }

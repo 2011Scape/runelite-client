@@ -39,5 +39,33 @@ abstract class Class241 {
         }
     }
 
+    /**
+     * Non-blocking counterpart of {@link #method1861}: advances the cycle clock by the time that
+     * has passed and returns how many cycles are now due, without ever sleeping. The game loop
+     * calls this every pass and does its own waiting (Applet_Sub1.run), which is what lets the
+     * renderer be paced separately instead of being dragged along by the timer's sleep.
+     * <p>
+     * A cycle that is not due yet must report zero. The vanilla {@link #method1859} returns 1 from
+     * its "not due" branch because the sleeping loop only ever reaches it after the sleep has
+     * brought the cycle due; called every frame without that sleep, it would report a cycle on
+     * every frame and run the game logic at the frame rate. {@link #cycleDue()} is exactly that
+     * branch's condition, so the two can never disagree about when a cycle has arrived.
+     */
+    final int pollCycles(int i, long l) {
+        anInt3149++;
+        method1858(-73);
+        if (!cycleDue()) return 0;
+        return method1859(71, l);
+    }
+
+    /** Whether the next cycle is due at the clock reading just advanced by {@link #method1858}. */
+    abstract boolean cycleDue();
+
+    /**
+     * Nanoseconds left until the next cycle is due, or 0 when one is due right now. The loop uses
+     * this to wait for whichever comes first: the next paced frame or the next cycle.
+     */
+    abstract long nanosToNextCycle();
+
     abstract long method1862(int i);
 }

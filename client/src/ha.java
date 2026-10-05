@@ -126,6 +126,31 @@ abstract class ha {
 
     abstract void method3651(za var_za);
 
+    /**
+     * Whether this backend's native rendering context is bound to the thread that created it and
+     * therefore has to be transferred explicitly before another thread may draw. Every backend
+     * this client builds is thread-affine, so the answer is yes; only the OpenGL backends
+     * ({@code ha_Sub2}, {@code Class377}) actually implement the transfer, and the default below
+     * refuses it, which makes the detached renderer switch itself off rather than race a context
+     * it cannot move.
+     */
+    boolean requiresThreadHandoff() {
+        return true;
+    }
+
+    /**
+     * Release a thread-bound backend context from the calling thread. {@code false} means the
+     * context could not be moved and the detached renderer must fall back to the game thread.
+     */
+    boolean detachRenderThreadContext() {
+        return false;
+    }
+
+    /** Acquire a thread-bound backend context on the calling thread, or {@code false} if unsupported. */
+    boolean attachRenderThreadContext() {
+        return false;
+    }
+
     abstract void P(int i, int i_55_, int i_56_, int i_57_, int i_58_);
 
     abstract void method3652();
@@ -157,6 +182,14 @@ abstract class ha {
     }
 
     abstract void f(int i, int i_75_);
+
+    /**
+     * Sets the fog end distance independently of the far clip plane set by {@link #f(int, int)}. The
+     * default leaves the fog end riding the far plane; the software and OpenGL backends override it so
+     * the fog can be tuned without moving the far clip.
+     */
+    void setFogEnd(int fogEnd) {
+    }
 
     abstract void la();
 

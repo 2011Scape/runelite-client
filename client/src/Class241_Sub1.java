@@ -15,6 +15,15 @@ final class Class241_Sub1 extends Class241 {
         return aLong6158;
     }
 
+    final long nanosToNextCycle() {
+        long l = aLong6154 - aLong6158;
+        return l < 0L ? 0L : l;
+    }
+
+    final boolean cycleDue() {
+        return aLong6154 <= aLong6158;
+    }
+
     final int method1859(int i, long l) {
         if (i != 71) return 127;
         if (aLong6154 > aLong6158) {

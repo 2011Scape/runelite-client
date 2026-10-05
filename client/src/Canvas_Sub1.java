@@ -5,6 +5,8 @@
 import java.awt.*;
 
 final class Canvas_Sub1 extends Canvas {
+    /** True when the map region has to be rendered again, either because the server rebuilt it or because the alt + wheel view distance (GameTuning) has settled on a new drawn radius. */
+    static boolean mapRegionDirty = true;
     static int[] anIntArray60;
     static int anInt61;
     static int anInt62;
@@ -125,6 +127,7 @@ final class Canvas_Sub1 extends Canvas {
 
     static final void method123(int i) {
         anInt63++;
+        Canvas_Sub1.mapRegionDirty = false;
         Class289.method2193(false, (byte) -125);
         Class268.anInt3441 = 0;
         boolean bool = true;
@@ -218,7 +221,7 @@ final class Canvas_Sub1 extends Canvas {
                 if (Class316.aClass348_Sub51_3959.aClass239_Sub16_7247.method1789(-32350) != 1) i_27_ = Class9.anIntArray168[Class348_Sub15.anInt6769];
                 else i_27_ = (Class286_Sub8.anIntArray6296[Class348_Sub15.anInt6769]);
                 if (Class348_Sub8.aHa6654.method3670()) i_27_++;
-                i_27_ = (int) (Loader.RENDER_DISTANCE_MULTIPLIER * i_27_);
+                i_27_ = GameTuning.drawRadius(i_27_);
                 Class348_Sub42_Sub2.method3171(Class348_Sub8.aHa6654, Class239_Sub16.anInt6012, 9, 4, Class367_Sub4.anInt7319, Class348_Sub40_Sub3.anInt9109, i_27_, bool_25_, Class348_Sub8.aHa6654.method3704() > 0);
                 Class348_Sub32.method3018(Class318_Sub1_Sub4_Sub2.anInt10096);
                 if (Class318_Sub1_Sub4_Sub2.anInt10096 != 0) Class348_Sub48.method3328(Class240.aClass324_4684);

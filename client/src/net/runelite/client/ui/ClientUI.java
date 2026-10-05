@@ -313,6 +313,17 @@ public class ClientUI
 			// Use custom UI font
 			SwingUtil.setFont(FontManager.getRunescapeFont());
 
+			// On Linux and macOS the look and feel only treats window decorations as custom when its
+			// default-decoration flags are set. Without them the frame is left undecorated with no title
+			// bar at all, so the sidebar toggle that lives in the title toolbar can never be reached.
+			// The frame reads the flag while it is being created, so set it before the frame is made.
+			final OSType osType = OSType.getOSType();
+			if (config.enableCustomChrome() && (osType == OSType.Linux || osType == OSType.MacOS))
+			{
+				JFrame.setDefaultLookAndFeelDecorated(true);
+				JDialog.setDefaultLookAndFeelDecorated(true);
+			}
+
 			// Create main window
 			frame = new ContainableFrame();
 
@@ -378,6 +389,33 @@ public class ClientUI
 			// Decorate window with custom chrome and titlebar if needed
 			withTitleBar = config.enableCustomChrome();
 			frame.setUndecorated(withTitleBar);
+			if (withTitleBar)
+			{
+				// Install the look-and-feel title pane before the frame is realised. The look and feel (and
+				// its Linux/macOS window-decoration handling) expects the decoration style to be set on the
+				// undecorated frame before it is packed, so do it here rather than after pack().
+				frame.getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+
+				// Some platforms (notably macOS Aqua) hand window decorations to the OS and leave the look
+				// and feel without a title pane. Setting the decoration style on a frame that is already
+				// undecorated would then leave a window with no title bar and no way to reach the sidebar
+				// toggle, so detect that now - before pack() makes the frame displayable - and fall back to
+				// the native decorations instead.
+				if (osType != OSType.Windows && SubstanceCoreUtilities.getTitlePaneComponent(frame) == null)
+				{
+					log.warn("Custom window chrome requested but the look-and-feel title pane is unavailable; "
+						+ "falling back to native window decorations");
+					try
+					{
+						frame.setUndecorated(false);
+						withTitleBar = false;
+					}
+					catch (IllegalComponentStateException ex)
+					{
+						log.warn("Unable to restore native window decorations", ex);
+					}
+				}
+			}
 
 			// Layout frame
 			frame.pack();
@@ -446,53 +484,18 @@ public class ClientUI
 
 			if (withTitleBar)
 			{
-				frame.getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
-
 				final JComponent titleBar = SubstanceCoreUtilities.getTitlePaneComponent(frame);
-				titleToolbar.putClientProperty(SubstanceTitlePaneUtilities.EXTRA_COMPONENT_KIND, SubstanceTitlePaneUtilities.ExtraComponentKind.TRAILING);
-				titleBar.add(titleToolbar);
-
-				// Substance's default layout manager for the title bar only lays out substance's components
-				// This wraps the default manager and lays out the TitleToolbar as well.
-				LayoutManager delegate = titleBar.getLayout();
-				titleBar.setLayout(new LayoutManager()
+				if (titleBar == null)
 				{
-					@Override
-					public void addLayoutComponent(String name, Component comp)
-					{
-						delegate.addLayoutComponent(name, comp);
-					}
-
-					@Override
-					public void removeLayoutComponent(Component comp)
-					{
-						delegate.removeLayoutComponent(comp);
-					}
-
-					@Override
-					public Dimension preferredLayoutSize(Container parent)
-					{
-						return delegate.preferredLayoutSize(parent);
-					}
-
-					@Override
-					public Dimension minimumLayoutSize(Container parent)
-					{
-						return delegate.minimumLayoutSize(parent);
-					}
-
-					@Override
-					public void layoutContainer(Container parent)
-					{
-						delegate.layoutContainer(parent);
-						normalizeTitlebarControlButtons(titleBar, titleToolbar);
-						final int width = titleToolbar.getPreferredSize().width;
-						final int availableWidth = Math.max(0, getTitlebarControlsLeft(titleBar, titleToolbar) - TITLEBAR_CONTROL_GAP);
-						final int height = Math.min(titleToolbar.getPreferredSize().height, titleBar.getHeight());
-						final int y = Math.max(0, (titleBar.getHeight() - height) / 2);
-						titleToolbar.setBounds(Math.max(0, availableWidth - width), y, Math.min(width, availableWidth), height);
-					}
-				});
+					// The look and feel did not provide a title pane. On Linux that is what happens when its
+					// default-decoration flags are not set - init() sets them above. Rather than fail the whole
+					// UI, keep going without the custom title bar.
+					log.warn("Custom window chrome requested but the look-and-feel title pane is unavailable");
+				}
+				else
+				{
+					installTitleToolbar(titleBar);
+				}
 			}
 
 			// Update config
@@ -519,6 +522,60 @@ public class ClientUI
 			titleToolbar.addComponent(sidebarNavigationButton, sidebarNavigationJButton);
 
 			restoreSidebarState();
+		});
+	}
+
+	/**
+	 * Adds the title toolbar (and, through it, the sidebar toggle button) to the look-and-feel title
+	 * pane, and widens the pane's layout so the toolbar is laid out beside the window controls. Split
+	 * out of {@link #init()} so a look and feel that provides no title pane can be handled without
+	 * failing the whole UI.
+	 */
+	private void installTitleToolbar(JComponent titleBar)
+	{
+		titleToolbar.putClientProperty(SubstanceTitlePaneUtilities.EXTRA_COMPONENT_KIND, SubstanceTitlePaneUtilities.ExtraComponentKind.TRAILING);
+		titleBar.add(titleToolbar);
+
+		// Substance's default layout manager for the title bar only lays out substance's components
+		// This wraps the default manager and lays out the TitleToolbar as well.
+		LayoutManager delegate = titleBar.getLayout();
+		titleBar.setLayout(new LayoutManager()
+		{
+			@Override
+			public void addLayoutComponent(String name, Component comp)
+			{
+				delegate.addLayoutComponent(name, comp);
+			}
+
+			@Override
+			public void removeLayoutComponent(Component comp)
+			{
+				delegate.removeLayoutComponent(comp);
+			}
+
+			@Override
+			public Dimension preferredLayoutSize(Container parent)
+			{
+				return delegate.preferredLayoutSize(parent);
+			}
+
+			@Override
+			public Dimension minimumLayoutSize(Container parent)
+			{
+				return delegate.minimumLayoutSize(parent);
+			}
+
+			@Override
+			public void layoutContainer(Container parent)
+			{
+				delegate.layoutContainer(parent);
+				normalizeTitlebarControlButtons(titleBar, titleToolbar);
+				final int width = titleToolbar.getPreferredSize().width;
+				final int availableWidth = Math.max(0, getTitlebarControlsLeft(titleBar, titleToolbar) - TITLEBAR_CONTROL_GAP);
+				final int height = Math.min(titleToolbar.getPreferredSize().height, titleBar.getHeight());
+				final int y = Math.max(0, (titleBar.getHeight() - height) / 2);
+				titleToolbar.setBounds(Math.max(0, availableWidth - width), y, Math.min(width, availableWidth), height);
+			}
 		});
 	}
 

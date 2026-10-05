@@ -46,7 +46,6 @@ final class Class286_Sub5 extends Class286 {
                 Class348_Sub48.anInt7129 = 0;
                 Class321.anInt4017 = Class272.anInt3473;
             }
-            Applet_Sub1.applyStretchedLogicalSize();
         }
     }
 

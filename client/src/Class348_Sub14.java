@@ -76,22 +76,41 @@ final class Class348_Sub14 extends Node {
             anInt6763++;
             int i_5_ = (-104 + Class367_Sub4.anInt7319) / 2;
             int i_6_ = (Class348_Sub40_Sub3.anInt9109 - 104) / 2;
-            boolean bool_7_ = bool;
+            // How much of the region is still loading, counted rather than answered as one
+            // boolean. The map is only rendered once this reaches zero: rendering it earlier
+            // bakes the unloaded tiles in as black - and a region load takes far longer than
+            // a few passes, so every early render was a mostly-black map, which is the void
+            // the minimap showed while teleporting or walking into a new region. While the
+            // gate holds, the minimap keeps drawing the last good image
+            // (Class108.minimapImage), which is complete even if it is stale; tiles that
+            // never load keep it waiting rather than trading it for a half-black map. Tiles
+            // with no objects at all resolve immediately (Class14_Sub2.method245), so the
+            // wait is bounded by the region's own loading.
+            int unresolved = 0;
             for (int i_8_ = i_5_; i_8_ < 104 + i_5_; i_8_++) {
                 for (int i_9_ = i_6_; i_6_ + 104 > i_9_; i_9_++) {
                     for (int i_10_ = i; i_10_ <= 3; i_10_++) {
                         if (Class58.method536(i_9_, false, i_8_, i, i_10_)) {
                             int i_11_ = i_10_;
                             if (NPCType.method802(i_9_, i_8_, true)) i_11_--;
-                            if (i_11_ >= 0) bool_7_ &= Class14_Sub2.method245(i_11_, i_8_, i_9_, (byte) 75);
+                            if (i_11_ >= 0 && !Class14_Sub2.method245(i_11_, i_8_, i_9_, (byte) 75)) unresolved++;
                         }
                     }
                 }
             }
-            if (!bool_7_) return false;
+            if (unresolved > 0) {
+                Class108.mapImageAttempts++;
+                MinimapDebug.recordGate(Class108.mapImageAttempts, unresolved);
+                return false;
+            }
+            Class108.mapImageAttempts = 0;
+            MinimapDebug.recordGate(0, unresolved);
             int[] is = new int[262144];
             for (int i_12_ = 0; is.length > i_12_; i_12_++)
                 is[i_12_] = -16777216;
+            // The image about to be replaced is what the minimap falls back to while the
+            // scene it describes is being rendered again (Class108.minimapImage).
+            if (Class108.aClass105_1664 != null) Class108.previousMapImage = Class108.aClass105_1664;
             Class108.aClass105_1664 = var_ha.method3662(512, is, (byte) 94, 0, 512, 512);
             Class358.method3489(-3);
             int i_13_ = (((-10 + (238 + (int) (20.0 * Math.random())) << 8) + (-10 + (int) (Math.random() * 20.0) + 238 << 16) - (-(int) (Math.random() * 20.0) + -228)) | ~0xffffff);

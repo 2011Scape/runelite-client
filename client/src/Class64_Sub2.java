@@ -976,9 +976,13 @@ final class Class64_Sub2 extends Class64 {
             }
             if (Class264.method2015(i, anInt5472, 7)) {
                 class64_sub2_154_.aClass290_5520 = class64_sub2_153_.aClass290_5520;
-                class64_sub2_154_.aClass290_5520.anInterface5_Impl1_3711 = aClass290_5520.anInterface5_Impl1_3711;
-                class64_sub2_154_.aClass290_5520.aBoolean3714 = aClass290_5520.aBoolean3714;
-                class64_sub2_154_.aClass290_5520.aBoolean3709 = true;
+                // The source model can legitimately carry no material (see the null branch below); guard
+                // the copy so an empty source cannot crash the renderer.
+                if (class64_sub2_154_.aClass290_5520 != null && aClass290_5520 != null) {
+                    class64_sub2_154_.aClass290_5520.anInterface5_Impl1_3711 = aClass290_5520.anInterface5_Impl1_3711;
+                    class64_sub2_154_.aClass290_5520.aBoolean3714 = aClass290_5520.aBoolean3714;
+                    class64_sub2_154_.aClass290_5520.aBoolean3709 = true;
+                }
             } else if (!Class161.method1258(i, -9301, anInt5472)) class64_sub2_154_.aClass290_5520 = null;
             else class64_sub2_154_.aClass290_5520 = aClass290_5520;
             if (Class239_Sub26.method1833((byte) -122, i, anInt5472)) {

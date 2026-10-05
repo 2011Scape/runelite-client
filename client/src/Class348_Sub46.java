@@ -32,8 +32,16 @@ final class Class348_Sub46 extends Node {
     static final void method3319(ha var_ha, byte i) {
         if (i > -108) method3321(19, 60, 108);
         anInt7114++;
-        if (((Class132.aPlayer_1907.plane) != Class334.anInt4155) && ChatMessage.aClass357ArrayArrayArray2029 != null) {
-            if (Class348_Sub14.method2808((Class132.aPlayer_1907.plane), var_ha, true)) Class334.anInt4155 = Class132.aPlayer_1907.plane;
+        // The plane comparison this used to be the whole condition of is not what makes a
+        // map stale: the image is the client's own render of the scene, so anything that
+        // changes the scene underneath it - a region load, a plane change, a scene rebuild
+        // announced by Class50_Sub2.method464 - means it has to be rendered again, and a
+        // missing image is the loudest case of that. What is left here is "does the image
+        // need rendering" (Class108.needsMapImage) plus the scene that a render reads.
+        if (ChatMessage.aClass357ArrayArrayArray2029 == null || !Class108.needsMapImage()) return;
+        if (Class348_Sub14.method2808((Class132.aPlayer_1907.plane), var_ha, true)) {
+            Class334.anInt4155 = Class132.aPlayer_1907.plane;
+            Class108.mapImageDirty = false;
         }
     }
 

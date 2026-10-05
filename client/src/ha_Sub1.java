@@ -5,6 +5,15 @@
 import java.awt.*;
 
 final class ha_Sub1 extends ha {
+    /**
+     * The software renderer owns no native context: it draws into Java arrays, so it does not need
+     * the OpenGL handoff the hardware backends do and the detached renderer may draw with it as-is.
+     */
+    @Override
+    boolean requiresThreadHandoff() {
+        return false;
+    }
+
     private int anInt7465;
     private int anInt7466;
     private IterableHashTable aClass356_7467;
@@ -35,6 +44,8 @@ final class ha_Sub1 extends ha {
     Class101_Sub1 aClass101_Sub1_7492;
     private int anInt7493;
     int anInt7494;
+    /** The dedicated fog end distance; clipping keeps using {@link #anInt7494}. See {@link #setFogEnd}. */
+    int anIntFogEnd = 3500;
     private int anInt7495;
     int anInt7496;
     int anInt7497;
@@ -534,7 +545,21 @@ final class ha_Sub1 extends ha {
         Class167 class167 = method3724(Thread.currentThread());
         this.anInt7482 = i;
         this.anInt7494 = i_156_;
-        class167.anInt2210 = this.anInt7494 - 255;
+        // The far plane sets the fog end too, so a caller that wants them apart calls setFogEnd next.
+        this.anIntFogEnd = i_156_;
+        class167.anInt2210 = this.anIntFogEnd - 255;
+    }
+
+    /**
+     * Sets the fog end independently of the far clip plane. The software renderer fogs by depth against
+     * {@code anInt2210}, which is derived from this, so the fog horizon moves while the clip plane does
+     * not. Every thread's context is updated, the way {@link #L(int, int, int)} updates its fog colour.
+     */
+    final void setFogEnd(int fogEnd) {
+        this.anIntFogEnd = fogEnd;
+        for (int i = 0; i < aClass167Array7480.length; i++) {
+            aClass167Array7480[i].anInt2210 = fogEnd - 255;
+        }
     }
 
     private final void method3715(int i, int i_157_, int i_158_, int i_159_, int i_160_, int i_161_, int i_162_, int i_163_) {
@@ -755,6 +780,10 @@ final class ha_Sub1 extends ha {
     }
 
     final void L(int i, int i_226_, int i_227_) {
+        // The experimental renderer's fog/sky colour override. The 0 the sky dome passes means
+        // "no fog" and is left alone; the environment's own colour is replaced with the override.
+        int override = GameTuning.fogColour();
+        if (override >= 0 && i != 0) i = override;
         for (int i_228_ = 0; i_228_ < aClass167Array7480.length; i_228_++) {
             Class167 class167 = aClass167Array7480[i_228_];
             class167.anInt2192 = i & 0xffffff;
@@ -1419,8 +1448,8 @@ final class ha_Sub1 extends ha {
                     this.anIntArray7483 = class348_sub31.anIntArray6916;
                     this.anInt7477 = class348_sub31.anInt6917;
                     anInt7486 = class348_sub31.anInt6920;
-                    anInt7465 = Applet_Sub1.shouldScaleCanvasFrame() ? this.anInt7477 : dimension.width;
-                    anInt7472 = Applet_Sub1.shouldScaleCanvasFrame() ? anInt7486 : dimension.height;
+                    anInt7465 = dimension.width;
+                    anInt7472 = dimension.height;
                     if (this.anInt7477 != anInt7495 || anInt7486 != anInt7488) {
                         anInt7481 = anInt7495 = this.anInt7477;
                         anInt7493 = anInt7488 = anInt7486;
@@ -1954,8 +1983,8 @@ final class ha_Sub1 extends ha {
                 this.anIntArray7483 = class348_sub31.anIntArray6916;
                 this.anInt7477 = class348_sub31.anInt6917;
                 anInt7486 = class348_sub31.anInt6920;
-                anInt7465 = Applet_Sub1.shouldScaleCanvasFrame() ? this.anInt7477 : dimension.width;
-                anInt7472 = Applet_Sub1.shouldScaleCanvasFrame() ? anInt7486 : dimension.height;
+                anInt7465 = dimension.width;
+                anInt7472 = dimension.height;
                 if (this.anInt7477 != anInt7495 || anInt7486 != anInt7488) {
                     anInt7481 = anInt7495 = this.anInt7477;
                     anInt7493 = anInt7488 = anInt7486;
@@ -2206,14 +2235,10 @@ final class ha_Sub1 extends ha {
         if (aCanvas7468 == null || this.aClass348_Sub31_7469 == null) throw new IllegalStateException("off");
         try {
             Graphics graphics = aCanvas7468.getGraphics();
-            if (Applet_Sub1.shouldScaleCanvasFrame()) {
-                this.aClass348_Sub31_7469.method3011(0, 0, anInt7486, graphics, -1, 0, this.anInt7477, 0);
-            } else {
-                for (int i_633_ = 0; i_633_ < i; i_633_++) {
-                    Rectangle rectangle = rectangles[i_633_];
-                    if (rectangle.x + i_631_ <= this.anInt7477 && rectangle.y + i_632_ <= anInt7486 && rectangle.x + i_631_ + rectangle.width > 0 && rectangle.y + i_632_ + rectangle.height > 0)
-                        this.aClass348_Sub31_7469.method3011(rectangle.y, rectangle.x + i_631_, rectangle.height, graphics, -1, rectangle.x, rectangle.width, rectangle.y + i_632_);
-                }
+            for (int i_633_ = 0; i_633_ < i; i_633_++) {
+                Rectangle rectangle = rectangles[i_633_];
+                if (rectangle.x + i_631_ <= this.anInt7477 && rectangle.y + i_632_ <= anInt7486 && rectangle.x + i_631_ + rectangle.width > 0 && rectangle.y + i_632_ + rectangle.height > 0)
+                    this.aClass348_Sub31_7469.method3011(rectangle.y, rectangle.x + i_631_, rectangle.height, graphics, -1, rectangle.x, rectangle.width, rectangle.y + i_632_);
             }
         } catch (Exception exception) {
             aCanvas7468.repaint();

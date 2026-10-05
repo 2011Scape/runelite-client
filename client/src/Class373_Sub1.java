@@ -34,6 +34,8 @@ final class Class373_Sub1 extends Class373 implements MouseListener, MouseMotion
     }
 
     public final synchronized void mouseReleased(MouseEvent mouseevent) {
+        mouseevent = InputHooks.released(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         int i = method3600(mouseevent, -75);
         int x = Applet_Sub1.scaleMouseX(mouseevent.getX());
         int y = Applet_Sub1.scaleMouseY(mouseevent.getY());
@@ -66,6 +68,8 @@ final class Class373_Sub1 extends Class373 implements MouseListener, MouseMotion
     }
 
     public final synchronized void mousePressed(MouseEvent mouseevent) {
+        mouseevent = InputHooks.pressed(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         int i = method3600(mouseevent, -90);
         int x = Applet_Sub1.scaleMouseX(mouseevent.getX());
         int y = Applet_Sub1.scaleMouseY(mouseevent.getY());
@@ -93,10 +97,14 @@ final class Class373_Sub1 extends Class373 implements MouseListener, MouseMotion
     }
 
     public final synchronized void mouseEntered(MouseEvent mouseevent) {
+        mouseevent = InputHooks.entered(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         method3599(mouseevent.getX(), -1, mouseevent.getY());
     }
 
     public final synchronized void mouseClicked(MouseEvent mouseevent) {
+        mouseevent = InputHooks.clicked(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         if (mouseevent.isPopupTrigger()) mouseevent.consume();
     }
 
@@ -111,6 +119,8 @@ final class Class373_Sub1 extends Class373 implements MouseListener, MouseMotion
     }
 
     public final synchronized void mouseMoved(MouseEvent mouseevent) {
+        mouseevent = InputHooks.moved(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         method3599(mouseevent.getX(), -1, mouseevent.getY());
     }
 
@@ -141,9 +151,14 @@ final class Class373_Sub1 extends Class373 implements MouseListener, MouseMotion
     }
 
     public final synchronized void mouseWheelMoved(MouseWheelEvent mousewheelevent) {
+        mousewheelevent = InputHooks.wheel(mousewheelevent);
+        if (mousewheelevent == null || mousewheelevent.isConsumed()) return;
         int i = Applet_Sub1.scaleMouseX(mousewheelevent.getX());
         int i_8_ = Applet_Sub1.scaleMouseY(mousewheelevent.getY());
         int i_9_ = mousewheelevent.getWheelRotation();
+        // The queued event carries only the rotation, so the modifiers the wheel tuning
+        // dispatches on (GameTuning.handleGameWheelScroll) are remembered alongside it here.
+        GameTuning.captureWheelModifiers(mousewheelevent.isControlDown(), mousewheelevent.isAltDown());
         anInt7423 = i;
         anInt7421 = i_8_;
         method3598(i, 6, i_9_, i_8_, false);
@@ -151,10 +166,14 @@ final class Class373_Sub1 extends Class373 implements MouseListener, MouseMotion
     }
 
     public final synchronized void mouseExited(MouseEvent mouseevent) {
+        mouseevent = InputHooks.exited(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         method3599(mouseevent.getX(), -1, mouseevent.getY());
     }
 
     public final synchronized void mouseDragged(MouseEvent mouseevent) {
+        mouseevent = InputHooks.dragged(mouseevent);
+        if (mouseevent == null || mouseevent.isConsumed()) return;
         method3599(mouseevent.getX(), -1, mouseevent.getY());
     }
 

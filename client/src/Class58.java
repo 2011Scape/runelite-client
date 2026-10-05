@@ -76,12 +76,6 @@ final class Class58 {
     static final boolean method536(int i, boolean bool, int i_24_, int i_25_, int i_26_) {
         if (bool != false) method536(-65, true, 105, -126, 39);
         anInt1066++;
-        if (Loader.ROOF_REMOVAL_TILE_DISTANCE_LIMIT > 0 && Class132.aPlayer_1907 != null) {
-            int dx = i_24_ - Class132.aPlayer_1907.anIntArray10320[0];
-            int dy = i - Class132.aPlayer_1907.anIntArray10317[0];
-            int limit = Loader.ROOF_REMOVAL_TILE_DISTANCE_LIMIT;
-            if (dx * dx + dy * dy > limit * limit) return false;
-        }
         if ((Class348_Sub33.aByteArrayArrayArray6962[0][i_24_][i] & 0x2) != 0) return true;
         if ((0x10 & Class348_Sub33.aByteArrayArrayArray6962[i_26_][i_24_][i]) != 0) return false;
         return i_25_ == Class239_Sub10.method1762(-55, i_26_, i, i_24_);

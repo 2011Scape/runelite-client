@@ -78,45 +78,10 @@ final class Class348_Sub31_Sub2 extends Class348_Sub31 implements ImageProducer 
         if (i_7_ != -1) method3011(-26, 63, -8, null, 101, 114, -111, 37);
         anInt9074++;
         method3015(i_6_, 25786, i_5_, i_10_, i_9_);
-        if (Applet_Sub1.shouldScaleCanvasFrame()) {
-            drawScaled(i, i_5_, i_6_, graphics, i_8_, i_9_, i_10_);
-            return;
-        }
 
         Shape shape = graphics.getClip();
         graphics.clipRect(i_8_, i, i_9_, i_6_);
         graphics.drawImage(anImage9075, i_8_ - i_5_, -i_10_ + i, aCanvas9073);
-        graphics.setClip(shape);
-    }
-
-    private void drawScaled(int y, int sourceX, int height, Graphics graphics, int x, int width, int sourceY) {
-        int canvasWidth = Math.max(1, aCanvas9073.getWidth());
-        int canvasHeight = Math.max(1, aCanvas9073.getHeight());
-        double scaleX = (double) canvasWidth / Math.max(1, this.anInt6917);
-        double scaleY = (double) canvasHeight / Math.max(1, this.anInt6920);
-
-        int destX1 = (int) Math.floor(x * scaleX);
-        int destY1 = (int) Math.floor(y * scaleY);
-        int destX2 = (int) Math.ceil((x + width) * scaleX);
-        int destY2 = (int) Math.ceil((y + height) * scaleY);
-
-        Shape shape = graphics.getClip();
-        graphics.setClip(destX1, destY1, Math.max(1, destX2 - destX1), Math.max(1, destY2 - destY1));
-
-        Object previousHint = null;
-        Graphics2D graphics2D = graphics instanceof Graphics2D ? (Graphics2D) graphics : null;
-        if (graphics2D != null) {
-            previousHint = graphics2D.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
-            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, Applet_Sub1.useFastCanvasScaling()
-                    ? RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
-                    : RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        }
-
-        graphics.drawImage(anImage9075, destX1, destY1, destX2, destY2, sourceX, sourceY, sourceX + width, sourceY + height, aCanvas9073);
-
-        if (graphics2D != null) {
-            graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, previousHint);
-        }
         graphics.setClip(shape);
     }
 

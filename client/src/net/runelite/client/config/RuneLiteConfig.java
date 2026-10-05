@@ -130,7 +130,13 @@ public interface RuneLiteConfig extends Config
 	)
 	default boolean enableCustomChrome()
 	{
-		return OSType.getOSType() == OSType.Windows;
+		// Custom chrome is supported on Linux and macOS too - ClientUI sets the look-and-feel
+		// default-decoration flags there, without which the window would be left undecorated with no
+		// title bar. On macOS that is what makes the Substance title pane (and therefore the sidebar
+		// toggle that lives in it) appear. ClientUI still falls back to native decorations if the look
+		// and feel ends up providing no title pane at all, so enabling this can never strand the window.
+		final OSType os = OSType.getOSType();
+		return os == OSType.Windows || os == OSType.Linux || os == OSType.MacOS;
 	}
 
 	@Range(

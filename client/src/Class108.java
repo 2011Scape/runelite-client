@@ -12,6 +12,34 @@ final class Class108 {
     static Class304 aClass304_1662 = new Class304(4);
     static int anInt1663;
     static Class105 aClass105_1664;
+    /**
+     * The region image the minimap drew before the current one.
+     * <p>
+     * Kept because the map is the one widget whose content the server does not send: it
+     * is rendered from the scene whenever the scene changes, and the frames between a
+     * change and that render used to be filled with the widget's own silhouette in black
+     * ({@code Class107.method1007}). A stale map of the floor you just left, or of the
+     * region you just walked out of, is wrong in a way that is recognisable; a black map
+     * is wrong in a way that looks like the interface broke. It is released with the
+     * current image in {@link #method1013}, and it is only ever assigned a sprite that
+     * was itself built by {@code Class348_Sub14.method2808}.
+     */
+    static Class105 previousMapImage;
+
+    /**
+     * Whether the scene has changed under the region image since it was rendered. Set by
+     * {@link #markMapImageDirty} on every scene rebuild, plane change and region load;
+     * cleared by {@code Class348_Sub46.method3319} when a render is let through.
+     */
+    static boolean mapImageDirty = true;
+
+    /**
+     * Passes the region gate has deferred the render for, counted while
+     * {@code Class348_Sub14.method2808} waits for the region to finish loading and reset
+     * when it lets one through. Diagnostic only - the wait it measures is unbounded by
+     * design, because a partial render is what put black voids in the map.
+     */
+    static int mapImageAttempts;
 
     static final float method1012(float f, float f_0_, float f_1_, float f_2_, int i, float f_3_, byte i_4_, float f_5_) {
         anInt1659++;
@@ -51,6 +79,43 @@ final class Class108 {
         if (i < 111) method1013((byte) 17);
         aClass304_1662 = null;
         aClass105_1664 = null;
+        previousMapImage = null;
+        mapImageDirty = true;
+    }
+
+    /**
+     * The image the minimap should draw: the region image when there is one, and the last
+     * good one when there is not. Null only before the first render of a session, which is
+     * the one case where there is genuinely nothing to show.
+     */
+    static final Class105 minimapImage() {
+        anInt1656++;
+        return aClass105_1664 != null ? aClass105_1664 : previousMapImage;
+    }
+
+    /**
+     * Whether the region image has to be rendered again this cycle.
+     * <p>
+     * A missing image is a reason on its own, which is what the plane comparison this
+     * replaces could not express: {@code Class50_Sub2.method464} announces a scene change
+     * by naming the plane being prepared, and when that is the plane the player is already
+     * on, the comparison said nothing had changed while the image it announced the change
+     * for had just been dropped.
+     */
+    static final boolean needsMapImage() {
+        anInt1656++;
+        return aClass105_1664 == null || mapImageDirty;
+    }
+
+    /**
+     * Marks the region image as describing a scene that is no longer there, without
+     * dropping it: what is on screen stays until the render that replaces it
+     * ({@code Class348_Sub46.method3319}) succeeds.
+     */
+    static final void markMapImageDirty() {
+        anInt1656++;
+        mapImageDirty = true;
+        mapImageAttempts = 0;
     }
 
     static final void method1014(int i) {

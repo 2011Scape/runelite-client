@@ -54,6 +54,7 @@ final class Class377 extends ha_Sub3 {
     static int anInt9854;
     static int anInt9855;
     private OpenGL anOpenGL9856;
+    private long primarySurface;
     static int anInt9857;
     static int anInt9858;
     static int anInt9859;
@@ -628,12 +629,7 @@ final class Class377 extends ha_Sub3 {
 
     final void method3937(byte i) {
         if (i != -33) method3832(35, (byte) -122);
-        if (Applet_Sub1.shouldScaleOpenGLFrame() && Class305.aCanvas3869 != null) {
-            Dimension dimension = Class305.aCanvas3869.getSize();
-            OpenGL.glViewport(this.anInt8181, this.anInt8109, dimension.width, dimension.height);
-        } else {
-            OpenGL.glViewport(this.anInt8181, this.anInt8109, this.anInt7931, this.anInt7962);
-        }
+        OpenGL.glViewport(this.anInt8181, this.anInt8109, this.anInt7931, this.anInt7962);
         anInt9827++;
     }
 
@@ -646,6 +642,7 @@ final class Class377 extends ha_Sub3 {
         try {
             try {
                 anOpenGL9856 = opengl;
+                primarySurface = l;
                 anOpenGL9856.b();
                 aString9917 = OpenGL.glGetString(7936).toLowerCase();
                 aString9916 = OpenGL.glGetString(7937).toLowerCase();
@@ -929,6 +926,21 @@ final class Class377 extends ha_Sub3 {
         anInt9857++;
     }
 
+    @Override
+    boolean requiresThreadHandoff() {
+        return true;
+    }
+
+    @Override
+    boolean detachRenderThreadContext() {
+        return anOpenGL9856 != null && anOpenGL9856.a();
+    }
+
+    @Override
+    boolean attachRenderThreadContext() {
+        return anOpenGL9856 != null && anOpenGL9856.b() && anOpenGL9856.setSurface(primarySurface);
+    }
+
     final void method3673() {
         anInt9892++;
         if (this.anInt7931 > 0 || this.anInt7962 > 0) {
@@ -1180,18 +1192,7 @@ final class Class377 extends ha_Sub3 {
     final void method3888(int i) {
         if (i != 6259) aClass285_Sub1Array9907 = null;
         anInt9817++;
-        if (Applet_Sub1.shouldScaleOpenGLFrame() && Class305.aCanvas3869 != null) {
-            Dimension dimension = Class305.aCanvas3869.getSize();
-            double scaleX = (double) dimension.width / Math.max(1, this.anInt7931);
-            double scaleY = (double) dimension.height / Math.max(1, this.anInt7962);
-            OpenGL.glScissor(
-                    this.anInt8181 + (int) Math.floor(this.anInt8106 * scaleX),
-                    this.anInt8109 + dimension.height - (int) Math.ceil(this.anInt8096 * scaleY),
-                    Math.max(0, (int) Math.ceil((-this.anInt8106 + this.anInt8183) * scaleX)),
-                    Math.max(0, (int) Math.ceil((this.anInt8096 - this.anInt8165) * scaleY)));
-        } else {
-            OpenGL.glScissor(this.anInt8181 - -this.anInt8106, -this.anInt8096 + (this.anInt8109 - -this.anInt7962), -this.anInt8106 + this.anInt8183, this.anInt8096 - this.anInt8165);
-        }
+        OpenGL.glScissor(this.anInt8181 - -this.anInt8106, -this.anInt8096 + (this.anInt8109 - -this.anInt7962), -this.anInt8106 + this.anInt8183, this.anInt8096 - this.anInt8165);
     }
 
     final void method3647(boolean bool) {
@@ -1220,30 +1221,6 @@ final class Class377 extends ha_Sub3 {
 
     final int[] na(int i, int i_90_, int i_91_, int i_92_) {
         anInt9820++;
-        if (Applet_Sub1.shouldScaleOpenGLFrame() && Class305.aCanvas3869 != null) {
-            Dimension dimension = Class305.aCanvas3869.getSize();
-            int actualH = dimension.height;
-            double scaleX = (double) dimension.width / Math.max(1, this.anInt7931);
-            double scaleY = (double) actualH / Math.max(1, this.anInt7962);
-            int px = (int) Math.floor(i * scaleX);
-            int py = (int) Math.floor(i_90_ * scaleY);
-            int pw = Math.max(1, (int) Math.ceil(i_91_ * scaleX));
-            int ph = Math.max(1, (int) Math.ceil(i_92_ * scaleY));
-            int[] pixels = new int[pw * ph];
-            for (int r = 0; r < ph; r++)
-                OpenGL.glReadPixelsi(px, (-1 + (-r + -py) + actualH), pw, 1, 32993, this.anInt9918, pixels, pw * r);
-            int[] out = new int[i_91_ * i_92_];
-            for (int y = 0; y < i_92_; y++) {
-                int srcY = Math.min(ph - 1, (int) ((y + 0.5) * scaleY));
-                int rowOff = srcY * pw;
-                int dstOff = y * i_91_;
-                for (int x = 0; x < i_91_; x++) {
-                    int srcX = Math.min(pw - 1, (int) ((x + 0.5) * scaleX));
-                    out[dstOff + x] = pixels[rowOff + srcX];
-                }
-            }
-            return out;
-        }
         int[] is = new int[i_92_ * i_91_];
         for (int i_93_ = 0; i_93_ < i_92_; i_93_++)
             OpenGL.glReadPixelsi(i, (-1 + (-i_93_ + -i_90_) + this.anInt7962), i_91_, 1, 32993, this.anInt9918, is, i_91_ * i_93_);

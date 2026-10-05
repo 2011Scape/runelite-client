@@ -242,8 +242,6 @@ public class PluginManager
 
 	public void startPlugins()
 	{
-		configManager.setConfiguration(RuneLiteConfig.GROUP_NAME, "stretchedmodeplugin", false);
-
 		List<Plugin> scannedPlugins = new ArrayList<>(plugins);
 		int loaded = 0;
 		for (Plugin plugin : scannedPlugins)

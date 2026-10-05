@@ -36,11 +36,22 @@ final class Class226 {
         int i_1_ = Class239_Sub19.anInt6043;
         int i_2_ = Class348_Sub33.anInt6964;
         if (i == 1) {
+            // The renderer is not up before the display exists, so there is no projection to rebuild.
+            if (Class348_Sub8.aHa6654 == null) return;
+            // Two planes now: the far clip plane (GameTuning.clipFarPlane) drives culling and the
+            // projection, and the fog plane (GameTuning.appliedFarPlane) drives only the fog, so the
+            // experimental renderer can tune each on its own. The interface-open doubling and negated
+            // fog start are applied afterwards, so they compose with the wheel's distance exactly as
+            // they did with the client's own.
+            int fogEnd = GameTuning.appliedFarPlane();
+            i_1_ = GameTuning.clipFarPlane();
             if (bool && Class305.aBoolean3870) {
                 i_1_ <<= 1;
+                fogEnd <<= 1;
                 i_2_ = -i_1_;
             }
             Class348_Sub8.aHa6654.f(i_2_, i_1_);
+            Class348_Sub8.aHa6654.setFogEnd(fogEnd);
         }
     }
 

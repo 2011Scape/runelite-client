@@ -61,6 +61,15 @@ final class Class241_Sub3 extends Class241 {
         return aLong6166;
     }
 
+    final long nanosToNextCycle() {
+        long l = aLong6167 - aLong6166;
+        return l < 0L ? 0L : l;
+    }
+
+    final boolean cycleDue() {
+        return aLong6167 <= aLong6166;
+    }
+
     Class241_Sub3() {
         anInt6168 = 1;
         aLongArray6171 = new long[10];

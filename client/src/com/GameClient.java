@@ -132,33 +132,165 @@ public abstract class GameClient extends Applet {
 
     public abstract Dimension getRealDimensions();
 
-    public abstract Dimension getStretchedDimensions();
-
-    public abstract void setStretchedEnabled(boolean state);
-
-    public abstract boolean isStretchedEnabled();
-
-    public abstract void setStretchedFast(boolean state);
-
-    public abstract boolean isStretchedFast();
-
-    public abstract void setStretchedIntegerScaling(boolean state);
-
-    public abstract boolean isStretchedIntegerScaling();
-
-    public abstract void setStretchedKeepAspectRatio(boolean state);
-
-    public abstract boolean isStretchedKeepAspectRatio();
-
-    public abstract void setScalingFactor(int factor);
-
-    public abstract int getScalingFactor();
-
     public abstract void invalidateStretching(boolean resize);
 
     public abstract void setAnimationSmoothingEnabled(boolean state);
 
     public abstract boolean isAnimationSmoothingEnabled();
+
+    /** Turns the detached renderer (DetachedRenderer) on or off. Backs the experimental renderer plugin. */
+    public abstract void setDetachedRendererEnabled(boolean enabled);
+
+    /** Sets the detached renderer's fps cap (0 = uncapped). Backs the experimental renderer plugin's config. */
+    public abstract void setDetachedRendererFpsTarget(int fps);
+
+    /** Turns the AFK idle distance drop on or off. Backs the AFK performance saver plugin. */
+    public abstract void setAfkSaverEnabled(boolean enabled);
+
+    /** Sets how many consecutive idle packets are required before the AFK distance drop engages. */
+    public abstract void setAfkSaverGracePackets(int packets);
+
+    /** Turns the displayfps overlay on or off. Backs the experimental renderer plugin's show-fps config. */
+    public abstract void setShowFpsOverlay(boolean show);
+
+    /** Pins the view distance (render-distance slider); 0 or less returns control to the wheel and the built scene. */
+    public abstract void setRenderDistance(int tiles);
+
+    /** Sets the far-plane fog scale in percent (fog slider). */
+    public abstract void setFogScale(int percent);
+
+    /** Turns the disable-culling option on or off. Backs the experimental renderer plugin. */
+    public abstract void setCullingDisabled(boolean disabled);
+
+    /** Sets the distance, in tiles, out to which culling is disabled. Backs the experimental renderer plugin. */
+    public abstract void setCullingDistance(int tiles);
+
+    /** Sets the camera-radius culling scale in percent of the vanilla per-scene-size radius. */
+    public abstract void setDrawRadiusScale(int percent);
+
+    /** Sets whether the fog horizon is clamped to the map the server has built (stops lower-plane bleed past the built edge). */
+    public abstract void setClampFogToBuiltMap(boolean clamp);
+
+    /** Turns off camera-view (frustum) culling of tiles. Backs the experimental renderer's culling tab. */
+    public abstract void setViewCullingDisabled(boolean disabled);
+
+    /** When on, hides ground planes above the player's current plane. Backs the experimental renderer's culling tab. */
+    public abstract void setHideUpperFloors(boolean hide);
+
+    /** Sets the camera zoom offset (zoom slider). Backs the experimental renderer plugin. */
+    public abstract void setZoom(int offset);
+
+    /** Sets the fog colour override (0xRRGGBB), or a negative value to leave the client's own. */
+    public abstract void setFogColour(int rgb);
+
+    /** The wheel-driven view distance in tiles, or 0 when the built scene is still in charge. */
+    public int getViewDistance()
+    {
+        return 0;
+    }
+
+    /** The wheel-driven camera zoom offset. */
+    public int getZoomOffset()
+    {
+        return 0;
+    }
+
+    /** The far-plane fog scale in percent currently in force. */
+    public int getFogScale()
+    {
+        return 100;
+    }
+
+    /** The camera-radius culling scale in percent currently in force. */
+    public int getDrawRadiusScale()
+    {
+        return 100;
+    }
+
+    /** The distance, in tiles, out to which culling is disabled. */
+    public int getCullingDistance()
+    {
+        return 0;
+    }
+
+    /** True while distance culling is disabled. */
+    public boolean isCullingDisabled()
+    {
+        return false;
+    }
+
+    /** True while camera-view (frustum) culling is disabled. */
+    public boolean isViewCullingDisabled()
+    {
+        return false;
+    }
+
+    /** True while ground planes above the player's current plane are hidden. */
+    public boolean isHideUpperFloors()
+    {
+        return false;
+    }
+
+    /** True while the fog horizon is clamped to the map the server has built. */
+    public boolean isClampFogToBuiltMap()
+    {
+        return true;
+    }
+
+    /** The fog colour override (0xRRGGBB), or -1 when the client's own fog colour is used. */
+    public int getFogColour()
+    {
+        return -1;
+    }
+
+    /** The detached renderer's fps cap (0 = uncapped). */
+    public int getFpsTarget()
+    {
+        return 180;
+    }
+
+    /** True while the displayfps overlay is shown. */
+    public boolean isShowFpsOverlay()
+    {
+        return false;
+    }
+
+    /**
+     * Snaps the wheel-eased view distance and zoom straight to their targets, so settings applied
+     * at start-up are already in place on the first frame instead of gliding in from the defaults.
+     */
+    public void snapRendererTuning()
+    {
+    }
+
+    /**
+     * Cancels any in-flight wheel ease and returns the view distance and zoom to their defaults,
+     * handing the horizon back to the built scene. Backs the experimental renderer's reset button.
+     */
+    public void resetWheelTuning()
+    {
+    }
+
+    /**
+     * Registers the listener told when the wheel moves the view distance or zoom; null clears it.
+     * Backs the experimental renderer's fast config round-trip, so an open config panel follows the
+     * wheel instead of waiting for the periodic sweep. Runs on the client thread.
+     */
+    public void setTuningChangeListener(Runnable listener)
+    {
+    }
+
+    /** Re-requests the current map region so the client runs its scene rebuild. Backs the force-rebuild action. */
+    public abstract void forceSceneRebuild();
+
+    /**
+     * Re-requests the vanilla scene size, so the horizon and fog shrink back to the default view
+     * distance after an alt + wheel session rather than staying at the larger built region. Backs the
+     * experimental renderer's reset button. Runs on the client thread.
+     */
+    public void resetSceneSize()
+    {
+    }
 
     public abstract int getLocalPlayerLocalX();
 
@@ -233,6 +365,16 @@ public abstract class GameClient extends Applet {
     }
 
     public NpcHullInfo getNpcHull(int npcIndex)
+    {
+        return null;
+    }
+
+    /**
+     * One line describing what the minimap last drew and why, or null when there is
+     * nothing worth reporting. Backed by {@code MinimapDebug}, written from the minimap's
+     * own render path. Displayed by the dev-tools overlay.
+     */
+    public String getMinimapDiagnostics()
     {
         return null;
     }

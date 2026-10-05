@@ -199,7 +199,7 @@ final class Class167 {
         this.anIntArray2247 = new int[10];
         this.anIntArray2234 = new int[Class64_Sub1.anInt5350];
         aHa_Sub1_2191 = var_ha_Sub1;
-        this.anInt2210 = aHa_Sub1_2191.anInt7494 + -255;
+        this.anInt2210 = aHa_Sub1_2191.anIntFogEnd + -255;
         this.aClass109_2220 = new Class109(var_ha_Sub1, this);
         this.aClass64_Sub1_2243 = new Class64_Sub1(aHa_Sub1_2191);
         this.aClass64_Sub1_2224 = new Class64_Sub1(aHa_Sub1_2191);

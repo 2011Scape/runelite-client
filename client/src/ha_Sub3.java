@@ -285,6 +285,8 @@ abstract class ha_Sub3 extends ha {
     private float[] aFloatArray8152;
     private boolean aBoolean8153;
     int anInt8154;
+    /** The dedicated fog end distance; the projection and far clip keep using {@link #anInt8154}. */
+    int anIntFogEnd = 3584;
     private float aFloat8155;
     private int anInt8156;
     private float[] aFloatArray8157;
@@ -1462,11 +1464,25 @@ abstract class ha_Sub3 extends ha {
         anInt7976++;
         if (i != this.anInt8095 || this.anInt8154 != i_138_) {
             this.anInt8154 = i_138_;
+            // The far plane sets the fog end too; setFogEnd splits them apart when wanted.
+            this.anIntFogEnd = i_138_;
             this.anInt8095 = i;
             method3831((byte) 19);
             method3846((byte) 127);
             method3856((byte) 57);
         }
+    }
+
+    /**
+     * Sets the fog end independently of the far clip plane. The fog projection matrix ({@code method3949})
+     * is rebuilt from this, so the fog horizon moves while the far clip and the scene projection, both
+     * built from {@link #anInt8154}, stay where {@link #f(int, int)} put them.
+     */
+    final void setFogEnd(int fogEnd) {
+        this.anIntFogEnd = fogEnd;
+        aBoolean8112 = false;
+        method3949((byte) -58);
+        method3908((byte) 29);
     }
 
     final Class299 method3697(int i, int i_139_, int i_140_, int i_141_, int i_142_, int i_143_) {
@@ -1698,6 +1714,10 @@ abstract class ha_Sub3 extends ha {
     }
 
     final void L(int i, int i_175_, int i_176_) {
+        // The experimental renderer's fog/sky colour override. The 0 the sky dome passes means
+        // "no fog" and is left alone; the environment's own colour is replaced with the override.
+        int override = GameTuning.fogColour();
+        if (override >= 0 && i != 0) i = override;
         anInt8078++;
         if (i != this.anInt8144 || this.anInt8091 != i_175_ || i_176_ != this.anInt8105) {
             this.anInt8144 = i;
@@ -1927,7 +1947,7 @@ abstract class ha_Sub3 extends ha {
     private final void method3908(byte i) {
         if (i < 2) method3949((byte) 23);
         anInt8070++;
-        this.aFloat8089 = (float) this.anInt8154;
+        this.aFloat8089 = (float) this.anIntFogEnd;
     }
 
     final void method3688(int i, int i_200_, int i_201_, int i_202_, int i_203_, int i_204_, int i_205_) {
@@ -2016,7 +2036,7 @@ abstract class ha_Sub3 extends ha {
         anInt8022++;
         if (i == -1568) {
             aFloatArray8152[10] = aFloat8166;
-            this.aFloat8169 = ((aFloatArray8152[14] - (float) this.anInt8154) / aFloatArray8152[10]);
+            this.aFloat8169 = ((aFloatArray8152[14] - (float) this.anIntFogEnd) / aFloatArray8152[10]);
         }
     }
 
@@ -2103,13 +2123,8 @@ abstract class ha_Sub3 extends ha {
         if (aCanvas7910 == null) anInt7958 = anInt7987 = 1;
         else {
             Dimension dimension = aCanvas7910.getSize();
-            if (Applet_Sub1.shouldScaleOpenGLFrame()) {
-                anInt7987 = Class348_Sub42_Sub8_Sub2.anInt10432;
-                anInt7958 = Class321.anInt4017;
-            } else {
-                anInt7987 = dimension.height;
-                anInt7958 = dimension.width;
-            }
+            anInt7987 = dimension.height;
+            anInt7958 = dimension.width;
         }
         if (bool != false) aHashtable8014 = null;
         anInt8033++;
@@ -2685,13 +2700,8 @@ abstract class ha_Sub3 extends ha {
                 aCanvas7910 = this.aCanvas7925 = canvas;
                 anObject8020 = this.anObject7919 = object;
                 Dimension dimension = canvas.getSize();
-                if (Applet_Sub1.shouldScaleOpenGLFrame()) {
-                    this.anInt7962 = anInt7987 = Class348_Sub42_Sub8_Sub2.anInt10432;
-                    this.anInt7931 = anInt7958 = Class321.anInt4017;
-                } else {
-                    this.anInt7962 = anInt7987 = dimension.height;
-                    this.anInt7931 = anInt7958 = dimension.width;
-                }
+                this.anInt7962 = anInt7987 = dimension.height;
+                this.anInt7931 = anInt7958 = dimension.width;
                 this.anInt8178 = i_289_;
                 Class59_Sub2_Sub1.method566(false, true, (byte) -127);
                 if (this.aD4579 == null) {
@@ -2751,7 +2761,7 @@ abstract class ha_Sub3 extends ha {
         if (!aBoolean8112) {
             float[] fs = aFloatArray8157;
             float f = (float) this.anInt8095;
-            float f_291_ = (float) this.anInt8154;
+            float f_291_ = (float) this.anIntFogEnd;
             float f_292_ = (aFloat8155 * (float) -this.anInt8130 / (float) this.anInt8134);
             float f_293_ = ((float) -this.anInt8094 * aFloat8155 / (float) this.anInt8129);
             float f_294_ = (aFloat8155 * (float) (-this.anInt8094 + this.anInt7931) / (float) this.anInt8129);

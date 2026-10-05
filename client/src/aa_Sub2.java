@@ -24,6 +24,12 @@ final class aa_Sub2 extends aa {
 
     static final boolean method164(int i, int i_0_, byte i_1_, int i_2_) {
         anInt5195++;
+        // The experimental renderer can turn the terrain/structure occlusion off, but only for the
+        // player's own plane and below. This test is what culls a scene entity or ground tile to the
+        // structure in front of it, so above the player's plane it is the only thing hiding a higher
+        // plane's floor behind a ceiling - disabling it there drew those floors through, which is the
+        // higher-plane bleed on the object and ground paths. The camera-view toggle must not reach it.
+        if (GameTuning.viewCullingDisabled() && i <= Class355.anInt4372) return false;
         if (!Class348_Sub40_Sub23.aBoolean9307 || !Class23.aBoolean351) return false;
         if (Class225.anInt2946 < 100) return false;
         int i_3_ = Class354.anIntArrayArrayArray4356[i][i_0_][i_2_];

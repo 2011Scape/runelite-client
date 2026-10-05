@@ -17,6 +17,37 @@ final class Class348_Sub49_Sub1 extends Packet {
     static int anInt9750;
     static int anInt9751 = 0;
 
+    /** How many slots the deferred draw queues grow by when the expanded scene fills them. */
+    private static final int QUEUE_GROWTH = 4096;
+
+    /**
+     * Appends an entity to the 10000-entry deferred draw queue ({@code aClass318_Sub1Array6066}).
+     * The queue was a fixed size chosen for the vanilla 104x104 scene, and once the experimental
+     * renderer builds a larger region (the wheel's render distance holds up to 168x168) the number of
+     * entities left for the depth-sorted pass in view can pass 10000, which overflowed the array and
+     * crashed the scene build with {@code ArrayIndexOutOfBoundsException: 10000}. The queue is only
+     * ever read, sorted and cleared with live counts and {@code .length}, so growing it is safe.
+     */
+    private static void queueGroundEntity(SceneEntity SceneEntity) {
+        SceneEntity[] queue = Class239_Sub21.aClass318_Sub1Array6066;
+        int index = Class5_Sub1_Sub1.anInt9930;
+        if (index >= queue.length) Class239_Sub21.aClass318_Sub1Array6066 = queue = java.util.Arrays.copyOf(queue, queue.length + QUEUE_GROWTH);
+        queue[index] = SceneEntity;
+        Class5_Sub1_Sub1.anInt9930 = index + 1;
+    }
+
+    /**
+     * Appends an entity to the 5000-entry tall-entity deferred draw queue
+     * ({@code aClass318_Sub1Array3737}); the same overflow risk as {@link #queueGroundEntity}.
+     */
+    private static void queueTallEntity(SceneEntity SceneEntity) {
+        SceneEntity[] queue = Class291.aClass318_Sub1Array3737;
+        int index = Class348_Sub42_Sub3.anInt9504;
+        if (index >= queue.length) Class291.aClass318_Sub1Array3737 = queue = java.util.Arrays.copyOf(queue, queue.length + QUEUE_GROWTH);
+        queue[index] = SceneEntity;
+        Class348_Sub42_Sub3.anInt9504 = index + 1;
+    }
+
     static final void method3398(boolean bool, byte[][][] is, int i, byte i_0_, int i_1_, int i_2_, boolean bool_3_) {
         int i_4_ = bool ? 1 : 0;
         Class5_Sub1_Sub1.anInt9930 = 0;
@@ -26,7 +57,7 @@ final class Class348_Sub49_Sub1 extends Packet {
             for (SceneEntity SceneEntity = Node.aClass318_Sub1Array4293[i_4_]; SceneEntity != null; SceneEntity = SceneEntity.aClass318_Sub1_6379) {
                 if (!Class348_Sub9.method2778(SceneEntity, bool, is, i, i_0_)) {
                     s_Sub2.method4001(SceneEntity);
-                    if (SceneEntity.anInt6389 != -1) Class239_Sub21.aClass318_Sub1Array6066[Class5_Sub1_Sub1.anInt9930++] = SceneEntity;
+                    if (SceneEntity.anInt6389 != -1) queueGroundEntity(SceneEntity);
                 }
             }
         }
@@ -34,17 +65,17 @@ final class Class348_Sub49_Sub1 extends Packet {
             for (SceneEntity SceneEntity = Class250.aClass318_Sub1Array3226[i_4_]; SceneEntity != null; SceneEntity = SceneEntity.aClass318_Sub1_6379) {
                 if (!Class348_Sub9.method2778(SceneEntity, bool, is, i, i_0_)) {
                     s_Sub2.method4001(SceneEntity);
-                    if (SceneEntity.anInt6389 != -1) Class291.aClass318_Sub1Array3737[Class348_Sub42_Sub3.anInt9504++] = SceneEntity;
+                    if (SceneEntity.anInt6389 != -1) queueTallEntity(SceneEntity);
                 }
             }
             for (SceneEntity SceneEntity = Class115.aClass318_Sub1Array1754[i_4_]; SceneEntity != null; SceneEntity = SceneEntity.aClass318_Sub1_6379) {
                 if (!Class348_Sub9.method2778(SceneEntity, bool, is, i, i_0_)) {
                     if (SceneEntity.method2377((byte) 122)) {
                         s_Sub2.method4001(SceneEntity);
-                        if (SceneEntity.anInt6389 != -1) Class291.aClass318_Sub1Array3737[Class348_Sub42_Sub3.anInt9504++] = SceneEntity;
+                        if (SceneEntity.anInt6389 != -1) queueTallEntity(SceneEntity);
                     } else {
                         s_Sub2.method4001(SceneEntity);
-                        if (SceneEntity.anInt6389 != -1) Class239_Sub21.aClass318_Sub1Array6066[Class5_Sub1_Sub1.anInt9930++] = SceneEntity;
+                        if (SceneEntity.anInt6389 != -1) queueGroundEntity(SceneEntity);
                     }
                 }
             }
@@ -53,8 +84,8 @@ final class Class348_Sub49_Sub1 extends Packet {
                     if (!Class348_Sub9.method2778((Class24.aClass318_Sub1_Sub3Array357[i_5_]), bool, is, i, i_0_)) {
                         s_Sub2.method4001(Class24.aClass318_Sub1_Sub3Array357[i_5_]);
                         if ((Class24.aClass318_Sub1_Sub3Array357[i_5_].anInt6389) != -1) {
-                            if (Class24.aClass318_Sub1_Sub3Array357[i_5_].method2377((byte) 122)) Class291.aClass318_Sub1Array3737[Class348_Sub42_Sub3.anInt9504++] = (Class24.aClass318_Sub1_Sub3Array357[i_5_]);
-                            else Class239_Sub21.aClass318_Sub1Array6066[Class5_Sub1_Sub1.anInt9930++] = (Class24.aClass318_Sub1_Sub3Array357[i_5_]);
+                            if (Class24.aClass318_Sub1_Sub3Array357[i_5_].method2377((byte) 122)) queueTallEntity((Class24.aClass318_Sub1_Sub3Array357[i_5_]));
+                            else queueGroundEntity((Class24.aClass318_Sub1_Sub3Array357[i_5_]));
                         }
                     }
                 }
@@ -67,7 +98,11 @@ final class Class348_Sub49_Sub1 extends Packet {
         }
         if (Class318_Sub1_Sub3_Sub3.aBoolean10221) Class9.aHa171.method3642(0, null);
         if ((i_2_ & 0x2) == 0) {
-            for (int i_7_ = Canvas_Sub1.anInt67; i_7_ < Class189.anInt2524; i_7_++) {
+            // The experimental renderer's "hide upper floors" option caps the ground planes drawn to the
+            // player's current plane, so higher floors stop showing through while standing on a lower one.
+            int i_7_limit = Class189.anInt2524;
+            if (GameTuning.hideUpperFloors()) i_7_limit = Math.min(i_7_limit, Class355.anInt4372 + 1);
+            for (int i_7_ = Canvas_Sub1.anInt67; i_7_ < i_7_limit; i_7_++) {
                 if (i_7_ >= i && is != null) {
                     int i_8_ = Class99.aBooleanArrayArray1572.length;
                     if ((Class37.anInt492 + Class99.aBooleanArrayArray1572.length) > Class318_Sub7.anInt6451) i_8_ -= (Class37.anInt492 + Class99.aBooleanArrayArray1572.length - Class318_Sub7.anInt6451);
@@ -91,15 +126,14 @@ final class Class348_Sub49_Sub1 extends Packet {
                                 }
                             }
                         }
-                        if (Class348_Sub40_Sub5.aBoolean9121) Class115.aBooleanArrayArrayArray1751[i_7_] = method3400(bools, i_7_, i, Class318_Sub1_Sub4_Sub1.anInt10084);
                     }
                     if (Class348_Sub40_Sub5.aBoolean9121) {
                         if (i_1_ >= 0) aa_Sub1.aSArray5191[i_7_].method3984(0, 0, 0, null, false, i_1_, i_2_);
                         else aa_Sub1.aSArray5191[i_7_].method3983(0, 0, 0, null, false, i_2_);
                         for (int i_15_ = 0; i_15_ < Npc.anInt10503; i_15_++)
                             Class319.aClass315Array3982[i_15_].method2359(new Class318_Sub2(i_7_ + 1), -1);
-                    } else if (i_1_ >= 0) aa_Sub1.aSArray5191[i_7_].method3984(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, method3400(Class348_Sub8.aBooleanArrayArray6656, i_7_, i, Class318_Sub1_Sub4_Sub1.anInt10084), false, i_1_, i_2_);
-                    else aa_Sub1.aSArray5191[i_7_].method3983(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, method3400(Class348_Sub8.aBooleanArrayArray6656, i_7_, i, Class318_Sub1_Sub4_Sub1.anInt10084), false, i_2_);
+                    } else if (i_1_ >= 0) aa_Sub1.aSArray5191[i_7_].method3984(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, bools, false, i_1_, i_2_);
+                    else aa_Sub1.aSArray5191[i_7_].method3983(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, Class348_Sub8.aBooleanArrayArray6656, false, i_2_);
                 } else {
                     int i_16_ = Class99.aBooleanArrayArray1572.length;
                     if ((Class37.anInt492 + Class99.aBooleanArrayArray1572.length) > Class318_Sub7.anInt6451) i_16_ -= (Class37.anInt492 + Class99.aBooleanArrayArray1572.length - Class318_Sub7.anInt6451);
@@ -114,15 +148,14 @@ final class Class348_Sub49_Sub1 extends Packet {
                                 bools[i_18_][i_20_] = (Class99.aBooleanArrayArray1572[i_18_][i_20_]) && !aa_Sub2.method164(i_7_, i_19_, (byte) -97, (i_20_ + (Class348_Sub34.anInt6974) - (Class240.anInt4686)));
                             }
                         }
-                        if (Class348_Sub40_Sub5.aBoolean9121) Class115.aBooleanArrayArrayArray1751[i_7_] = method3400(bools, i_7_, i, Class318_Sub1_Sub4_Sub1.anInt10084);
                     }
                     if (Class348_Sub40_Sub5.aBoolean9121) {
                         if (i_1_ >= 0) aa_Sub1.aSArray5191[i_7_].method3984(0, 0, 0, null, false, i_1_, i_2_);
                         else aa_Sub1.aSArray5191[i_7_].method3983(0, 0, 0, null, false, i_2_);
                         for (int i_21_ = 0; i_21_ < Npc.anInt10503; i_21_++)
                             Class319.aClass315Array3982[i_21_].method2359(new Class318_Sub2(i_7_ + 1), -1);
-                    } else if (i_1_ >= 0) aa_Sub1.aSArray5191[i_7_].method3984(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, method3400(Class348_Sub8.aBooleanArrayArray6656, i_7_, i, Class318_Sub1_Sub4_Sub1.anInt10084), true, i_1_, i_2_);
-                    else aa_Sub1.aSArray5191[i_7_].method3983(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, method3400(Class348_Sub8.aBooleanArrayArray6656, i_7_, i, Class318_Sub1_Sub4_Sub1.anInt10084), true, i_2_);
+                    } else if (i_1_ >= 0) aa_Sub1.aSArray5191[i_7_].method3984(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, bools, true, i_1_, i_2_);
+                    else aa_Sub1.aSArray5191[i_7_].method3983(Class239_Sub25.anInt6111, Class285_Sub2.anInt8502, Class318_Sub1_Sub4_Sub1.anInt10084, Class348_Sub8.aBooleanArrayArray6656, true, i_2_);
                 }
             }
         }
@@ -131,39 +164,6 @@ final class Class348_Sub49_Sub1 extends Packet {
             for (int i_22_ = 0; i_22_ < Class348_Sub42_Sub3.anInt9504; i_22_++)
                 Class13.method227(Class291.aClass318_Sub1Array3737[i_22_], true, bool_3_);
         }
-    }
-
-    private static boolean[][] method3400(boolean[][] bools, int plane, int basePlane, int radius) {
-        if (bools == null || radius <= 1 || Loader.ELEVATED_FLOOR_FOG_EDGE_TILE_MARGIN <= 0) return bools;
-        int currentPlane = Class132.aPlayer_1907 == null ? basePlane : Class132.aPlayer_1907.plane;
-        int planeDelta = plane - currentPlane;
-        if (planeDelta <= 0) return bools;
-        int margin = Loader.ELEVATED_FLOOR_FOG_EDGE_TILE_MARGIN + (planeDelta - 1) * 2;
-        if (margin >= radius) margin = radius - 1;
-        if (margin <= 0) return bools;
-        int effectiveRadius = radius - margin;
-        int effectiveRadiusSq = effectiveRadius * effectiveRadius;
-        int center = bools.length >> 1;
-        boolean[][] masked = new boolean[bools.length][];
-        for (int x = 0; x < bools.length; x++) {
-            boolean[] row = bools[x];
-            if (row == null) continue;
-            boolean[] maskedRow = new boolean[row.length];
-            int dx = x - radius;
-            boolean withinX = dx >= -effectiveRadius && dx <= effectiveRadius;
-            for (int y = 0; y < row.length; y++) {
-                int dy = y - radius;
-                int radialDx = x - center;
-                int radialDy = y - center;
-                maskedRow[y] = withinX
-                        && dy >= -effectiveRadius
-                        && dy <= effectiveRadius
-                        && radialDx * radialDx + radialDy * radialDy <= effectiveRadiusSq
-                        && row[y];
-            }
-            masked[x] = maskedRow;
-        }
-        return masked;
     }
 
     final void method3399(int i, float f) {

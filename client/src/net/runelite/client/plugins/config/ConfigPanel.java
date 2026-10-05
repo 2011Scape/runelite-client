@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -84,7 +85,9 @@ import net.runelite.client.config.Range;
 import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.config.Units;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.PluginChanged;
+import net.runelite.client.plugins.ConfigButtonProvider;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.ui.ColorScheme;
@@ -139,6 +142,13 @@ public class ConfigPanel extends PluginPanel
 	private ColorPickerManager colorPickerManager;
 
 	private PluginConfigurationDescriptor pluginConfig = null;
+
+	/**
+	 * Set while a rebuild is queued on the EDT, so a burst of config changes (the experimental
+	 * renderer writing several settings, or a reset) collapses into a single rebuild instead of one
+	 * per key. Atomic because config changes arrive on the EDT and on the plugin's scheduler thread.
+	 */
+	private final AtomicBoolean refreshPending = new AtomicBoolean(false);
 
 	static
 	{
@@ -587,6 +597,16 @@ public class ConfigPanel extends PluginPanel
 
 		topLevelPanels.values().forEach(mainPanel::add);
 
+		// Action buttons the plugin wants in its config panel, next to Reset.
+		Plugin actionPlugin = pluginConfig.getPlugin();
+		if (actionPlugin instanceof ConfigButtonProvider)
+		{
+			for (JButton actionButton : ((ConfigButtonProvider) actionPlugin).getConfigButtons())
+			{
+				mainPanel.add(actionButton);
+			}
+		}
+
 		JButton resetButton = new JButton("Reset");
 		resetButton.addActionListener((e) ->
 		{
@@ -697,6 +717,35 @@ public class ConfigPanel extends PluginPanel
 				pluginToggle.setSelected(event.isLoaded());
 			});
 		}
+	}
+
+	/**
+	 * Keeps an open panel showing the value actually in force. Settings can change outside the panel:
+	 * the experimental renderer moves its view distance and zoom on the wheel, and the client's own
+	 * commands change others, so without this the controls would show a stale value until the panel
+	 * was reopened. Rebuilding on the EDT (never on the posting thread) coalesces a burst of changes
+	 * into one rebuild; rebuilding only reads config, so it cannot loop back into more changes.
+	 */
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (pluginConfig == null || !event.getGroup().equals(pluginConfig.getConfigDescriptor().getGroup().value()))
+		{
+			return;
+		}
+		if (!refreshPending.compareAndSet(false, true))
+		{
+			return;
+		}
+		SwingUtilities.invokeLater(() ->
+		{
+			refreshPending.set(false);
+			// The panel can be popped while the rebuild is queued; the muxer unregisters it then.
+			if (pluginConfig != null)
+			{
+				rebuild();
+			}
+		});
 	}
 
 //	@Subscribe
