@@ -5,6 +5,8 @@
 import jagtheora.ogg.OggPacket;
 import jagtheora.ogg.OggStreamState;
 
+import net.runelite.client.util.OSType;
+
 abstract class Class348_Sub23 extends Node {
     static int anInt6863;
     static int anInt6864;
@@ -56,6 +58,15 @@ abstract class Class348_Sub23 extends Node {
     static final void method2965(String string, int i, boolean bool, int i_1_) {
         anInt6866++;
         Class187.method1406(true);
+        // macOS: the native OpenGL/GLX toolkits (jaggl) cannot attach to the AWT canvas - every
+        // attempt calls JAWT, which fails with "JAWT_GetAWT must be called after loading a JVM", and
+        // the scene never renders while the switch keeps being retried. Force the Java software
+        // renderer (mode 0) here so the stored setting and the actual toolkit agree and no native
+        // surface is ever created. Windows and Linux are untouched, so their toolkit choice is
+        // unchanged. The same gate also stops the recursion below from re-trying a native mode.
+        if (i != 0 && OSType.getOSType() == OSType.MacOS) {
+            i = 0;
+        }
         if (i == 0) {
             Class348_Sub8.aHa6654 = Class104.method958(true, 0, Class348_Sub40_Sub4.aD9113, Class316.aClass348_Sub51_3959.aClass239_Sub20_7248.method1808(-32350) * 2, Class305.aCanvas3869, Class136.aClass45_4796);
             if (string != null) {

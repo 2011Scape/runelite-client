@@ -5,6 +5,8 @@
 import java.awt.*;
 import java.util.Random;
 
+import net.runelite.client.util.OSType;
+
 abstract class ha {
     static int anInt4561;
     static int anInt4562;
@@ -335,6 +337,13 @@ abstract class ha {
     static final synchronized ha method3692(int i, int i_168_, int i_169_, Js5Archive Js5Archive, int i_170_, d var_d, Canvas canvas, int i_171_) {
         try {
             anInt4576++;
+            // Hard backstop: on macOS never build a native toolkit. The jaggl native library cannot
+            // attach to the AWT canvas there (JAWT fails, logging "JAWT_GetAWT must be called after
+            // loading a JVM") and the scene stays black. Route every request to the Java software
+            // renderer (mode 0) instead. Windows/Linux keep the requested toolkit.
+            if (i_171_ != 0 && OSType.getOSType() == OSType.MacOS) {
+                i_171_ = 0;
+            }
             if (i_170_ == i_171_) return Class348_Sub5.method2753(true, i_168_, i_169_, canvas, var_d);
             if (i_171_ == 2) return Class306.method2297(-6, i_168_, var_d, canvas, i_169_);
             if (i_171_ == 1) return Class262.method2000(3, i, canvas, var_d);

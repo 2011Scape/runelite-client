@@ -4,6 +4,8 @@
 
 import java.awt.*;
 
+import net.runelite.client.util.OSType;
+
 final class Class239_Sub14 extends Class239 {
     static int anInt5982;
     static int anInt5983;
@@ -63,6 +65,14 @@ final class Class239_Sub14 extends Class239 {
 
     static final int method1781(int i, int i_1_, int i_2_) {
         anInt5983++;
+        // macOS: the native toolkits cannot attach to an AWT canvas here (JAWT fails with
+        // "JAWT_GetAWT must be called after loading a JVM"), so treat every request for one as a
+        // request for the Java software renderer (mode 0). This keeps the stored setting, the
+        // actual toolkit and this switch in agreement, which stops the scene from being rebuilt
+        // against a broken native surface over and over. Windows/Linux keep the requested mode.
+        if (i != 0 && OSType.getOSType() == OSType.MacOS) {
+            i = 0;
+        }
         if (Class348_Sub31.anInt6923 == -1) return 1;
         if (i != Class316.aClass348_Sub51_3959.aClass239_Sub25_7271.method1829(-32350)) {
             // Switching the toolkit can fail when the renderer's native library is missing or will not
