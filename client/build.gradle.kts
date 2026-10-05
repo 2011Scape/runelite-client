@@ -15,7 +15,7 @@ buildscript {
 }
 
 group = "world.gregs.void"
-version = "0.2.0_a1"
+version = "0.2.0_a2"
 
 repositories {
     mavenCentral()
